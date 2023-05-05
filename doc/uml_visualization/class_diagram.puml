@@ -1,0 +1,169 @@
+@startuml
+enum Application_State {
+    IDLE
+    APPLICATION_INITIALIZATION
+    APPLICATION_TERMINATION
+    SIMULATION_INITIALIZATION
+    SIMULATION_RUNNING
+    SIMULATION_PAUSED
+    SIMULATION_TERMINATION
+}
+
+class Application_Handler {
+    application_state: Application_State
+    next_application_state: Application_State
+    input_handler: Input_Handler
+    simulation_handler: Simulation_Handler
+    visualization_handler: Visualization_Handler
+}
+
+class Input {
+    key: int
+    reaction: void
+    description: String
+    +bool check_and_execute(int key)
+    +void print_information()
+}
+
+class Input_Context {
+    description: String
+    registered_inputs: std::vector<Input>
+    +void check_and_execute(std::vector<Key> keys)
+    +void print_information()
+}
+
+class Input_Handler {
+    input_contexts: std::unordered_map<int, Input_Context>
+    +bool register_input_context(int context_id)
+    +bool change_input_context(int context_id)
+    +int get_current_input_context()
+    +bool clear_key(Key key, int context_id)
+    +bool clear_everything(int context_id)
+    +bool add_key(Key key, function reaction, int context_id)
+    +void print_information()
+}
+
+class Scene_Handler {
+    int current_scene
+    int next_scene
+    std::vector<Scene_Information> available_scenes
+    +void register_new_scene() 
+    +bool change_scene(int scene_id)
+    +bool load_scene(int scene_id)
+    +void print_information()
+}
+
+class Scene_Information {
+    std::string description
+    std::vector<std::string> filepath_obstacles
+    std::vector<std::string> filepath_fluid
+    +void print_information()
+}
+
+class Poisson_Disk_Sampler {
+
+}
+
+struct Particle {
+    id: int
+    position: Vec3
+    velocity: Vec3
+    density: double
+}
+
+struct Obstacle {
+
+}
+
+Scene_Handler *-- Scene_Information
+Scene_Handler *-- Poisson_Disk_Sampler
+Scene_Handler *-- Particle
+Scene_Handler *-- Obstacle
+Application_Handler *-- Scene_Handler
+
+
+
+Input_Handler *-- Input_Context
+Input_Context *-- Input
+
+Application_Handler *-- Input_Handler
+Application_Handler *-- Simulation_Handler
+Application_Handler *-- Visualization_Handler
+Application_Handler +-- Application_State
+Visualization_Handler *-- Graphical_User_Interface
+
+class Graphical_User_Interface {
+
+}
+
+class Simulation_Handler {
+    
+}
+
+class Visualization_Handler {
+    
+}
+
+enum Object_Visualization_Type {
+    MESH
+    TEXTURE
+}
+
+enum Particle_Visualization_Type {
+    PARTICLE_RAW
+    PARTICLE_VELOCITY
+    PARTICLE_DENSITY
+    FLUID
+}
+
+Visualization_Handler +-- Object_Visualization_Type
+Visualization_Handler +-- Particle_Visualization_Type
+
+class Renderer {
+    +void clear()
+    +void draw(vertex_array, index_buffer, shader)
+}
+
+class Vertex_Array {
+
+}
+
+class Vertex_Buffer {
+
+}
+
+class Vertex_Buffer_Layout {
+
+}
+
+class Vertex_Buffer_Element {
+
+}
+
+Vertex_Array *-- Vertex_Buffer
+Vertex_Array *-- Vertex_Buffer_Layout
+Vertex_Buffer_Layout *-- Vertex_Buffer_Element
+
+class Index_Buffer {
+
+}
+
+class Shader {
+
+}
+
+Visualization_Handler *-- Renderer
+Renderer *-- Vertex_Array
+Renderer *-- Index_Buffer
+Renderer *-- Shader
+
+class Camera {
+    position: Vec3
+    normal: Vec3
+    +void interpolate_camera_movement()
+}
+
+Visualization_Handler *-- Camera
+
+
+@enduml
