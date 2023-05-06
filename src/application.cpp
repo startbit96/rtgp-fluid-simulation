@@ -7,7 +7,7 @@ Application_Handler application_handler;
 
 void rtgp_application()
 {
-    while ((application_handler.is_running == true) && (glfwWindowShouldClose(application_handler.window) == false)) {
+    while (application_handler.is_running() == true) {
         // Process input events.
         application_handler.input_handler.check_and_execute();
         // Set the current state. We use next and current state for debugging information.
@@ -61,21 +61,12 @@ void rtgp_application()
                 // Print interaction information for the user.
                 application_handler.input_handler.print_information();
                 // Register the available scenes.
-                application_handler.scene_handler.register_new_scene(
-                    "scene 1",
-                    std::vector<std::string> {"test"},
-                    std::vector<std::string> {"test"}
-                );
-                application_handler.scene_handler.register_new_scene(
-                    "scene 2",
-                    std::vector<std::string> {"test"},
-                    std::vector<std::string> {"test"}
-                );
-                application_handler.scene_handler.register_new_scene(
-                    "scene 3",
-                    std::vector<std::string> {"test"},
-                    std::vector<std::string> {"test"}
-                );
+                if (application_handler.scene_handler.load_scene_informations() == false) {
+                    // Something went wrong. Terminate the application.
+                    std::cout << "An error occured while loading the scene informations." << std::endl;
+                    application_handler.next_state = APPLICATION_TERMINATION;
+                    continue;
+                }
                 // Announce the first scene (id = 0) as the next scene to be loaded.
                 application_handler.scene_handler.next_scene_id = 0;
                 // Print informations about the available scenes for the user.
@@ -87,7 +78,6 @@ void rtgp_application()
                 // Terminate the application.
                 std::cout << "Terminate the application." << std::endl;
                 application_handler.terminate();
-                application_handler.is_running = false;
                 break;
             case SIMULATION_INITIALIZATION:
                 // This state is used for loading the new scene or reloading the current scene.

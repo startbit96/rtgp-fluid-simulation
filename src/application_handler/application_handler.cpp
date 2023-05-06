@@ -4,7 +4,7 @@
 
 Application_Handler::Application_Handler()
 {
-    this->is_running = true;
+    this->_is_running = true;
     this->current_state = IDLE;
     this->next_state = APPLICATION_INITIALIZATION;
     this->window = nullptr;
@@ -82,5 +82,20 @@ bool Application_Handler::initialize ()
 
 void Application_Handler::terminate () 
 {
+    // Stop the application.
+    this->_is_running = false;
+    // Terminate GLFW.
     glfwTerminate();
+}
+
+bool Application_Handler::is_running ()
+{
+    // Check if the window was closed by the user.
+    // If the window was closed, switch the application stage to APPLICATION_TERMINATION
+    // so that the terminate() function is going to be called.
+    // Do not set the _is_running value on false yet. This is done by the terminate() function.
+    if (glfwWindowShouldClose(this->window) == true) {
+        this->next_state = APPLICATION_TERMINATION;
+    }
+    return this->_is_running;
 }

@@ -1,0 +1,24 @@
+[
+    {
+        "description": "Dambreak Scenario",
+        "filepath_simulation_space": "simulation_space.obj",
+        "filepaths_obstacles": [
+            "obstacle1.obj",
+            "obstalce2.obj"
+        ],
+        "filepaths_fluids": [
+            "fluid1.obj"
+        ]
+    },
+    {
+        "description": "Dambreak Scenario 2",
+        "filepath_simulation_space": "simulation_space12.obj",
+        "filepaths_obstacles": [
+            "obstacle3.obj",
+            "obstalce4.obj"
+        ],
+        "filepaths_fluids": [
+            "fluid2.obj"
+        ]
+    }
+]

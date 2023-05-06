@@ -5,6 +5,14 @@ include a GIF of the visualization here.
 
 ## Installation
 Dependencies
+OpenGL
+glfw3
+GLEW
+glm
+ASSIMP
+Bullet
+nlohmann json
+
 Installation steps
 
 ## Usage

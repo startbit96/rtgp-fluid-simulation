@@ -1,5 +1,5 @@
 #include "index_buffer.h"
-#include "../utils/debug.h"
+#include "debug.h"
 
 Index_Buffer::Index_Buffer(const unsigned int* indices, unsigned int count)
   :

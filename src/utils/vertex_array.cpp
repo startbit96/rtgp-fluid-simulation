@@ -1,5 +1,5 @@
 #include "vertex_array.h"
-#include "../utils/debug.h"
+#include "debug.h"
 
 Vertex_Array::Vertex_Array()
 {

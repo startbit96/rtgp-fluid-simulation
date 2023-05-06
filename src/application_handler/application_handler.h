@@ -26,9 +26,9 @@ class Application_Handler
 {
     private:
         bool initialize_window();
+        bool _is_running;
 
     public:
-        bool is_running;
         Application_State current_state;
         Application_State next_state;
         GLFWwindow* window;
@@ -42,4 +42,5 @@ class Application_Handler
         
         bool initialize();
         void terminate();
+        bool is_running ();
 };

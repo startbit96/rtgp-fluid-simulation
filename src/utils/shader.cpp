@@ -1,5 +1,5 @@
-#include "renderer.h"
 #include "shader.h"
+#include "debug.h"
 
 #include <iostream>
 #include <string>

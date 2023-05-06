@@ -3,9 +3,9 @@
 #include <GL/glew.h>
 
 #include "../utils/debug.h"
-#include "vertex_array.h"
-#include "index_buffer.h"
-#include "shader.h"
+#include "../utils/vertex_array.h"
+#include "../utils/index_buffer.h"
+#include "../utils/shader.h"
 
 class Renderer
 {

@@ -1,6 +1,7 @@
 #include "scene_handler.h"
 
 #include <iostream>
+#include <fstream>
 
 
 Scene_Handler::Scene_Handler()
@@ -9,13 +10,38 @@ Scene_Handler::Scene_Handler()
     this->next_scene_id = -1;
 }
 
-void Scene_Handler::register_new_scene (std::string scene_description, std::vector<std::string> filepath_obstacles, std::vector<std::string> filepath_fluid)
+bool Scene_Handler::load_scene_informations (std::string filepath_json_file)
+{
+    std::ifstream json_file(filepath_json_file);
+    // Check if the file exists.
+    if (json_file.good() == false) {
+        std::cout << "An error occured while reading in the scene informations from the file '" <<
+            filepath_json_file << "'. File not found." << std::endl;
+        return false;
+    }
+    // Try to parse the file into the std::vector of Scene_Information.
+    try {
+        this->available_scenes = json::parse(json_file);
+    }
+    catch (...) {
+        std::cout << "An error occured while reading in the scene informations from the file '" <<
+            filepath_json_file << "'. Format not correct. For more informations check the repository." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+void Scene_Handler::register_new_scene (std::string description, 
+                                        std::string filepath_simulation_space,
+                                        std::vector<std::string> filepath_fluid,
+                                        std::vector<std::string> filepath_obstacles)
 {
     this->available_scenes.push_back(
         Scene_Information(
-            scene_description,
-            filepath_obstacles,
-            filepath_fluid
+            description,
+            filepath_simulation_space,
+            filepath_fluid,
+            filepath_obstacles
         )
     );
 }
@@ -51,5 +77,9 @@ bool Scene_Handler::load_scene ()
 
 void Scene_Handler::print_information () 
 {
-    
+    std::cout << std::endl << "Available scenes:" << std::endl << std::endl;
+    for (Scene_Information scene_information: this->available_scenes) {
+        scene_information.print_information();
+        std::cout << std::endl;
+    }
 }
