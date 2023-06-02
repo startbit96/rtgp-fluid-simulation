@@ -32,6 +32,8 @@ bool Application_Handler::initialize_window()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // Do not allow the window to resize.
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     // Create a windowed mode window and its OpenGL context.
     this->window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, 
@@ -65,6 +67,14 @@ bool Application_Handler::initialize_window()
 
     // Ensure we can capture the escape key being pressed below.
     glfwSetInputMode(this->window, GLFW_STICKY_KEYS, GL_TRUE);
+
+    // Define the viewport dimensions.
+    int width, height;
+    glfwGetFramebufferSize(this->window, &width, &height);
+    glViewport(0, 0, width, height);
+
+    // Enable z-test.
+    glEnable(GL_DEPTH_TEST);
 
     return true;
 }

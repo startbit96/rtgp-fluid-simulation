@@ -55,9 +55,23 @@ class Scene_Handler {
 
 class Scene_Information {
     std::string description
-    std::vector<std::string> filepath_obstacles
-    std::vector<std::string> filepath_fluid
+    double world_cube_edge_length
+    std::vector<Cuboid> particle_volumes
     +void print_information()
+}
+
+class Cuboid {
+    int x_min
+    int x_max
+    int y_min
+    int y_max
+    int z_min
+    int z_max
+    std::vector<glm::vec3> vertices
+    std::vector<int> indices
+    Vertex_Array vertex_array_object
+    std::vector<Particle> fill_with_particles (int number_of_particles)
+    bool contains (&Cuboid)
 }
 
 class Poisson_Disk_Sampler {

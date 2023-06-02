@@ -57,3 +57,5 @@ The `Visualization_Handler` therefore does not load the new models but only visu
 The application loop is implemented in the function `rtgp_application` in the file `application.cpp`.
 
 It consists of a while loop that executes the functions depending on the current application state.
+
+How is the fps handled? Fixed? Adjusting fps to workload?

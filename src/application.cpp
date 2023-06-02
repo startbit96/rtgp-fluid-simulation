@@ -60,23 +60,54 @@ void rtgp_application()
                 }
                 // Print interaction information for the user.
                 application_handler.input_handler.print_information();
+                // Initialize the scene handler.
+                std::cout << "Initialize scene handler." << std::endl;
                 // Register the available scenes.
-                if (application_handler.scene_handler.load_scene_informations() == false) {
-                    // Something went wrong. Terminate the application.
-                    std::cout << "An error occured while loading the scene informations." << std::endl;
-                    application_handler.next_state = APPLICATION_TERMINATION;
-                    continue;
-                }
+                application_handler.scene_handler.register_new_scene(
+                    "Cube in the middle.",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f)
+                    }
+                );
+                application_handler.scene_handler.register_new_scene(
+                    "Dam break scenario.",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f)
+                    }
+                );
+                application_handler.scene_handler.register_new_scene(
+                    "Double dam break scenario.",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f),
+                        Cuboid(0.5f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f)
+                    }
+                );
                 // Announce the first scene (id = 0) as the next scene to be loaded.
+                // It will be loaded in the SIMULATION_INITIALIZATION state, so we do not need to 
+                // check here if the scene really exists.
                 application_handler.scene_handler.next_scene_id = 0;
                 // Print informations about the available scenes for the user.
                 application_handler.scene_handler.print_information();
                 // If all went good we arrived here. So the next step is to initialize the simulation.
                 application_handler.next_state = SIMULATION_INITIALIZATION;
+                // Initialize the visualization handler.
+                std::cout << "Initialize visualization handler." << std::endl;
+                application_handler.visualization_handler.window = application_handler.window;
+                application_handler.visualization_handler.init();
                 break;
             case APPLICATION_TERMINATION:
                 // Terminate the application.
                 std::cout << "Terminate the application." << std::endl;
+                // Free GPU ressources.
+                for (Scene_Information scene_information: application_handler.scene_handler.available_scenes) {
+                    scene_information.simulation_space.free_gpu_resources();
+                    for (Cuboid fluid_starting_position: scene_information.fluid_starting_positions) {
+                        fluid_starting_position.free_gpu_resources();
+                    }
+                }
                 application_handler.terminate();
                 break;
             case SIMULATION_INITIALIZATION:
@@ -91,6 +122,9 @@ void rtgp_application()
                 }
                 // Activate the input behavior for the simulation.
                 application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_SIMULATION);
+                // Load the references into the visualization handler.
+                application_handler.visualization_handler.simulation_space = application_handler.scene_handler.get_pointer_to_simulation_space();
+                application_handler.visualization_handler.fluid_start_positions = application_handler.scene_handler.get_pointer_to_fluid_starting_positions();
                 // The next state will be the running simulation.
                 application_handler.next_state = SIMULATION_RUNNING;
                 break;

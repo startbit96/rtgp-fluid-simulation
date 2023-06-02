@@ -10,40 +10,17 @@ Scene_Handler::Scene_Handler()
     this->next_scene_id = -1;
 }
 
-bool Scene_Handler::load_scene_informations (std::string filepath_json_file)
+void Scene_Handler::register_new_scene (std::string description,
+                                        Cuboid&& simulation_space,
+                                        std::vector<Cuboid> fluid_starting_positions)
 {
-    std::ifstream json_file(filepath_json_file);
-    // Check if the file exists.
-    if (json_file.good() == false) {
-        std::cout << "An error occured while reading in the scene informations from the file '" <<
-            filepath_json_file << "'. File not found." << std::endl;
-        return false;
+    Scene_Information scene_information (description, std::move(simulation_space), fluid_starting_positions);
+    if (scene_information.is_valid() == true) {
+        this->available_scenes.push_back(scene_information);
     }
-    // Try to parse the file into the std::vector of Scene_Information.
-    try {
-        this->available_scenes = json::parse(json_file);
+    else {
+        std::cout << "ERROR: Scene with description '" << description << "' is invalid." << std::endl;
     }
-    catch (...) {
-        std::cout << "An error occured while reading in the scene informations from the file '" <<
-            filepath_json_file << "'. Format not correct. For more informations check the repository." << std::endl;
-        return false;
-    }
-    return true;
-}
-
-void Scene_Handler::register_new_scene (std::string description, 
-                                        std::string filepath_simulation_space,
-                                        std::vector<std::string> filepath_fluid,
-                                        std::vector<std::string> filepath_obstacles)
-{
-    this->available_scenes.push_back(
-        Scene_Information(
-            description,
-            filepath_simulation_space,
-            filepath_fluid,
-            filepath_obstacles
-        )
-    );
 }
 
 bool Scene_Handler::delete_scene (int scene_id) 
@@ -75,11 +52,22 @@ bool Scene_Handler::load_scene ()
     return true;
 }
 
+Cuboid* Scene_Handler::get_pointer_to_simulation_space ()
+{
+    return &this->available_scenes[this->current_scene_id].simulation_space;
+}
+
+std::vector<Cuboid>* Scene_Handler::get_pointer_to_fluid_starting_positions ()
+{
+    return &this->available_scenes[this->current_scene_id].fluid_starting_positions;
+}
+
 void Scene_Handler::print_information () 
 {
-    std::cout << std::endl << "Available scenes:" << std::endl << std::endl;
-    for (Scene_Information scene_information: this->available_scenes) {
-        scene_information.print_information();
-        std::cout << std::endl;
+    std::cout << std::endl << "Available scenes:" << std::endl;
+    for (int i = 0; i < this->available_scenes.size(); i++) {
+        std::cout << "(" << i + 1 << ") ";
+        this->available_scenes[i].print_information();
     }
+    std::cout << std::endl;
 }

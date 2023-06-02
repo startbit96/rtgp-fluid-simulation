@@ -1,6 +1,7 @@
 build/
 .vscode
 out/
+.DS_Store
 
 # cmake related files (from the cmake-gitignore template):
 CMakeLists.txt.user

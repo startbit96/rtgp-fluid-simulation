@@ -13,7 +13,8 @@
 #define DEFAULT_WINDOW_NAME         "RTGP - Fluid Simulation"
 
 
-enum Application_State {
+enum Application_State 
+{
     IDLE,
     APPLICATION_INITIALIZATION,
     APPLICATION_TERMINATION,
