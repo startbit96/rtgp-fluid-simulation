@@ -8,6 +8,8 @@ Scene_Handler::Scene_Handler()
 {
     this->current_scene_id = -1;
     this->next_scene_id = -1;
+    this->particles = NULL;
+    this->number_of_particles = 1000;
 }
 
 void Scene_Handler::register_new_scene (std::string description,
@@ -49,7 +51,50 @@ bool Scene_Handler::load_scene ()
         return false;
     }
     this->current_scene_id = this->next_scene_id;
+    this->calculate_initial_particle_positions();
     return true;
+}
+
+void Scene_Handler::calculate_initial_particle_positions ()
+{
+    // Free the memory if it was used before.
+    if (this->particles != NULL) {
+        delete[] this->particles;
+        this->particles = NULL;
+    }
+    // Allocate new memory.
+    this->particles = new Particle[this->number_of_particles];
+    // In the scene settings we have set a number of particles. Since a scene can have
+    // multiple volumes that have to be filled with particles, divide the number of particles evenly.
+    if (this->available_scenes[this->current_scene_id].fluid_starting_positions.size() == 1) {
+        // We dont need to divide.
+        this->available_scenes[this->current_scene_id].fluid_starting_positions[0].fill_with_particles(
+            this->number_of_particles, this->particles
+        );
+    }
+    else {
+        // We need to divide. Divide evenly by taking the volume of each cuboid into account.
+        float total_volume = 0.0f;
+        for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
+            total_volume += this->available_scenes[this->current_scene_id].fluid_starting_positions.at(i).get_volume();
+        }
+        unsigned int offset = 0;
+        for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
+            unsigned int partial_number_of_particles;
+            if (i < (this->available_scenes[this->current_scene_id].fluid_starting_positions.size() - 1)) {
+                partial_number_of_particles = (unsigned int)(this->number_of_particles * (
+                    this->available_scenes[this->current_scene_id].fluid_starting_positions.at(i).get_volume() / total_volume
+                ));
+            }
+            else {
+                partial_number_of_particles = this->number_of_particles - offset;
+            }
+            this->available_scenes[this->current_scene_id].fluid_starting_positions[0].fill_with_particles(
+                this->number_of_particles, this->particles
+            );
+            offset += partial_number_of_particles;
+        }
+    }
 }
 
 Cuboid* Scene_Handler::get_pointer_to_simulation_space ()

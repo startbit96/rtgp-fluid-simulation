@@ -15,7 +15,7 @@ Visualization_Handler::Visualization_Handler ()
 
 void Visualization_Handler::init ()
 {
-    Shader shader ("./shaders/00_basic.vert", "./shaders/00_basic.frag");
+    Shader shader ("../shaders/00_basic.vert", "../shaders/00_basic.frag");
     shader.use_program();
 }
 

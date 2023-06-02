@@ -34,5 +34,7 @@ class Cuboid
         ~Cuboid ();
     
         bool contains (Cuboid &other);
+        float get_volume ();
+        void fill_with_particles (unsigned int number_of_particles, Particle* particles, unsigned int offset=0);
         void free_gpu_resources ();
 };

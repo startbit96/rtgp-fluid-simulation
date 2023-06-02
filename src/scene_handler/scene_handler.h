@@ -17,6 +17,8 @@ class Scene_Handler
         int current_scene_id;
         int next_scene_id;
         std::vector<Scene_Information> available_scenes;
+        Particle *particles;
+        unsigned int number_of_particles;
 
         Scene_Handler();
 
@@ -26,6 +28,7 @@ class Scene_Handler
         bool delete_scene (int scene_id);
         void delete_all_scenes ();
         bool load_scene ();
+        void calculate_initial_particle_positions ();
         Cuboid* get_pointer_to_simulation_space ();
         std::vector<Cuboid>* get_pointer_to_fluid_starting_positions ();
         void print_information ();
