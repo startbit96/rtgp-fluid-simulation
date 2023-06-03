@@ -103,8 +103,10 @@ void Cuboid::fill_with_particles (unsigned int number_of_particles, Particle* pa
                 current_particle++;
                 number_of_calculated_particles++;
                 
-                if (number_of_calculated_particles >= number_of_particles)
+                if (number_of_calculated_particles >= number_of_particles) {
+                    std::cout << "stop at " << number_of_calculated_particles << std::endl;
                     return;
+                }
             }
         }
     }

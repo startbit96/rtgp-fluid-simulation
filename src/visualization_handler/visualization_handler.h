@@ -14,6 +14,8 @@ class Visualization_Handler
         GLFWwindow* window;
         Cuboid *simulation_space;
         std::vector<Cuboid> *fluid_start_positions;
+        unsigned int vao_particles;
+        unsigned int number_of_particles;
 
         Visualization_Handler ();
 

@@ -18,7 +18,11 @@ class Scene_Handler
         int next_scene_id;
         std::vector<Scene_Information> available_scenes;
         Particle *particles;
+        unsigned int *particle_indices;
         unsigned int number_of_particles;
+        unsigned int vertex_array_object;
+        unsigned int vertex_buffer_object;
+        unsigned int index_buffer_object;
 
         Scene_Handler();
 

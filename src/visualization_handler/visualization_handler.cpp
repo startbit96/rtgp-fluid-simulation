@@ -37,6 +37,10 @@ void Visualization_Handler::visualize ()
         GLCall( glBindVertexArray(this->fluid_start_positions->at(i).vertex_array_object) );
         GLCall( glDrawElements(GL_TRIANGLES, this->fluid_start_positions->at(i).indices.size(), GL_UNSIGNED_INT, 0) );
     }
+    // Visualize the particles.
+    GLCall( glPointSize(5.0f) );
+    GLCall( glBindVertexArray(this->vao_particles) );
+    GLCall( glDrawElements(GL_POINTS, this->number_of_particles, GL_UNSIGNED_INT, 0) );
     // Unbind.
     GLCall( glBindVertexArray(0) );
     // Swap front and back buffers.
