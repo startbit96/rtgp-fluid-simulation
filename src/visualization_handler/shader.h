@@ -1,9 +1,6 @@
 #pragma once
 
 #include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
 
 enum Shader_Type
 {

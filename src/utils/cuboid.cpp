@@ -105,19 +105,23 @@ void Cuboid::fill_with_particles (unsigned int number_of_particles, Particle* pa
     
     unsigned int number_of_calculated_particles = 0;
     Particle *current_particle = &particles[0] + offset;
-    for (float x = this->x_min; x < this->x_max; x += spacing) {
-        for (float y = this->y_min; y < this->y_max; y += spacing) {
-            for (float z = this->z_min; z < this->z_max; z += spacing) {
-                current_particle->position = glm::vec3(x, y, z);
-                current_particle++;
-                number_of_calculated_particles++;
-                
-                if (number_of_calculated_particles >= number_of_particles) {
-                    return;
+    while (number_of_calculated_particles < number_of_particles) {
+        for (float x = this->x_min + spacing / 2; x < this->x_max; x += spacing) {
+            for (float y = this->y_min + spacing / 2; y < this->y_max; y += spacing) {
+                for (float z = this->z_min + spacing / 2; z < this->z_max; z += spacing) {
+                    current_particle->position = glm::vec3(x, y, z);
+                    current_particle++;
+                    number_of_calculated_particles++;
+                    
+                    if (number_of_calculated_particles >= number_of_particles) {
+                        std::cout << number_of_calculated_particles << std::endl;
+                        return;
+                    }
                 }
             }
         }
     }
+    std::cout << number_of_calculated_particles << std::endl;
 }
 
 void Cuboid::draw (bool unbind)

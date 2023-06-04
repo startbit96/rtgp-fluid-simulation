@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <sstream>
 
 #include "../utils/cuboid.h"
 #include "../utils/debug.h"
@@ -36,6 +37,9 @@ Visualization_Handler::Visualization_Handler ()
         FLUID_STARTING_POS_COLOR_B,
         FLUID_STARTING_POS_COLOR_A
     );
+    this->last_time_stamp = glfwGetTime();
+    this->last_time_stamp_fps = this->last_time_stamp;
+    this->frame_counter = 0;
     
     // The shaders will be initialized later, because we have to wait for 
     // the OpenGL environment to be set up.
@@ -79,6 +83,21 @@ void Visualization_Handler::visualize ()
     // "Clear" the frame and z buffer.
     GLCall( glClearColor(BACKGROUND_COLOR_R, BACKGROUND_COLOR_G, BACKGROUND_COLOR_B, BACKGROUND_COLOR_A) );
     GLCall( glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) );
+
+    // Calculate the time that has passed and update it in the camera object.
+    float current_time_stamp = glfwGetTime();
+    this->camera.delta_time = current_time_stamp - this->last_time_stamp;
+    this->last_time_stamp = current_time_stamp;
+    // Update the fps and print it if a specific time has passed.
+    this->frame_counter++;
+    if ((current_time_stamp - this->last_time_stamp_fps) >= FPS_UPDATE_INTERVAL) {
+        float fps = float(this->frame_counter) / (current_time_stamp - this->last_time_stamp_fps);
+        std::stringstream window_title;
+        window_title << WINDOW_DEFAULT_NAME << " " << " [" << fps << " FPS]";
+        glfwSetWindowTitle(this->window, window_title.str().c_str());
+        this->last_time_stamp_fps = current_time_stamp;
+        this->frame_counter = 0;
+    }
     
     // Visualize the cuboids if desired.
     if ((this->draw_simulation_space == true)|| (this->draw_fluid_starting_positions == true)) {

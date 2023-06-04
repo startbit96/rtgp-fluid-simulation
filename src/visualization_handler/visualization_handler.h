@@ -8,6 +8,8 @@
 #include "../utils/cuboid.h"
 #include "../utils/particle_system.h"
 
+// Project related defines.
+#define WINDOW_DEFAULT_NAME         "RTGP - Fluid Simulation"
 // Perspective related defines.
 #define WINDOW_DEFAULT_WIDTH        1024
 #define WINDOW_DEFAULT_HEIGHT       768
@@ -30,6 +32,8 @@
 #define FLUID_STARTING_POS_COLOR_G  1.0f
 #define FLUID_STARTING_POS_COLOR_B  0.0f
 #define FLUID_STARTING_POS_COLOR_A  1.0f
+// FPS Visualization.
+#define FPS_UPDATE_INTERVAL         1.0f
 
 
 class Visualization_Handler 
@@ -52,6 +56,10 @@ class Visualization_Handler
         // Color settings.
         glm::vec4 color_simulation_space;
         glm::vec4 color_fluid_starting_positions;
+        // Time and fps calculation.
+        float last_time_stamp;
+        float last_time_stamp_fps;
+        unsigned int frame_counter;
 
     public:
         // A reference to the GLFW window. It will be created in the application handler and
