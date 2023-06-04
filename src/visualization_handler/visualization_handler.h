@@ -44,6 +44,7 @@ class Visualization_Handler
         std::vector<Shader> fluid_shaders;
         unsigned int current_fluid_shader;
         // The projection matrix. It will use the values defined above in the define section.
+        float aspect_ratio;
         glm::mat4 projection_matrix;
         // Some settings regarding what has to be drawn and what.
         bool draw_simulation_space;

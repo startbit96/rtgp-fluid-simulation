@@ -15,9 +15,10 @@ Visualization_Handler::Visualization_Handler ()
     // Make sure to pass the pointer to the window before calling visualize().
     this->window = nullptr;
     // Calculate the projection matrix once.
+    this->aspect_ratio = (float)WINDOW_DEFAULT_WIDTH / (float)WINDOW_DEFAULT_HEIGHT;
     this->projection_matrix = glm::perspective(
         PERSPECTIVE_FOV_DEG, 
-        (float)WINDOW_DEFAULT_WIDTH / (float)WINDOW_DEFAULT_HEIGHT,
+        this->aspect_ratio,
         PERSPECTIVE_NEAR, 
         PERSPECTIVE_FAR
     );
@@ -44,9 +45,16 @@ bool Visualization_Handler::initialize_shaders ()
 {
     // Shader for visualizing the cuboids (simulation space, fluid starting positions).
     this->cuboid_shader = new Shader("./shaders/cuboid.vert", "./shaders/cuboid.frag");
+    if (this->cuboid_shader->is_valid == false) {
+        return false;
+    }
     // Shaders for visualizing the fluid.
-    // ...
+    this->fluid_shaders = std::vector<Shader> {
+        Shader("./shaders/particle.vert", "./shaders/particle.frag", "./shaders/particle.geom")
+    };
     this->current_fluid_shader = 0;
+    // If we arrive here, all shaders were read in successfully.
+    return true;
 }
 
 void Visualization_Handler::toggle_simulation_space_visualization ()
@@ -106,7 +114,35 @@ void Visualization_Handler::visualize ()
     }
 
     // Visualize the particles.
-    GLCall( glPointSize(3.0f) );
+    // Deactivate wireframe mode.
+    GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
+    // Activate the desired shader program.
+    this->fluid_shaders[this->current_fluid_shader].use_program();
+    // Set the projection matrix.
+    GLCall( glUniformMatrix4fv(glGetUniformLocation(
+        this->fluid_shaders[this->current_fluid_shader].program_id, "u_projection_matrix"), 1, GL_FALSE, 
+        glm::value_ptr(this->projection_matrix)) );
+    // Set the viewmatrix.
+    glm::mat4 view_matrix = camera.get_view_matrix();
+    GLCall( glUniformMatrix4fv(glGetUniformLocation(
+        this->fluid_shaders[this->current_fluid_shader].program_id, "u_view_matrix"), 1, GL_FALSE, 
+        glm::value_ptr(view_matrix)) );
+    // Set the color.
+    glm::vec4 color (0.0f, 0.0f, 1.0f, 0.5f);
+    GLCall( glUniform4fv(glGetUniformLocation(
+        this->cuboid_shader->program_id, "u_color"), 1, 
+        glm::value_ptr(color)) );
+    // Set the point size.
+    float point_size = 0.1f;
+    GLCall( glUniform1f(glGetUniformLocation(
+            this->fluid_shaders[this->current_fluid_shader].program_id, "pointSize"), 
+            point_size) );
+    // Aspect ratio.
+    GLCall( glUniform1f(glGetUniformLocation(
+            this->fluid_shaders[this->current_fluid_shader].program_id, "aspectRatio"), 
+            this->aspect_ratio) );
+
+    // GLCall( glPointSize(3.0f) );
     GLCall( glBindVertexArray(this->vao_particles) );
     GLCall( glDrawElements(GL_POINTS, this->number_of_particles, GL_UNSIGNED_INT, 0) );
     // Unbind.

@@ -102,7 +102,12 @@ void rtgp_application()
                 application_handler.next_state = SIMULATION_INITIALIZATION;
                 // Initialize the visualization handler.
                 std::cout << "Initialize visualization handler." << std::endl;
-                application_handler.visualization_handler.initialize_shaders();
+                if (application_handler.visualization_handler.initialize_shaders() == false) {
+                    // Something went wrong. Terminate the application.
+                    std::cout << "An error occured while loading the shaders." << std::endl;
+                    application_handler.next_state = APPLICATION_TERMINATION;
+                    continue;
+                }
                 break;
             case APPLICATION_TERMINATION:
                 // Terminate the application.
@@ -114,6 +119,8 @@ void rtgp_application()
                         fluid_starting_position.free_gpu_resources();
                     }
                 }
+                // Delete the shaders.
+                // ...
                 application_handler.terminate();
                 break;
             case SIMULATION_INITIALIZATION:

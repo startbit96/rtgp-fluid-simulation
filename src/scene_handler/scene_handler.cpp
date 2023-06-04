@@ -12,7 +12,7 @@ Scene_Handler::Scene_Handler()
     this->next_scene_id = -1;
     this->particles = NULL;
     this->particle_indices = NULL;
-    this->number_of_particles = 1200000;
+    this->number_of_particles = 1000;
 }
 
 void Scene_Handler::register_new_scene (std::string description,

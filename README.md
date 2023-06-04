@@ -10,6 +10,7 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 - input handler for zooming
 - is there a way to make the relative paths more robust?
 - everything private that can be private?
+- save termination of the program if the shaders could no be loaded
 
 ## Dependencies
 
