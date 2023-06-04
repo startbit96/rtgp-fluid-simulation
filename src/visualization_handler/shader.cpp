@@ -1,4 +1,7 @@
 #include "shader.h"
+
+#include <filesystem>
+
 #include "../utils/debug.h"
 
 Shader::Shader (const char* filepath_vertex_shader, const char* filepath_fragment_shader)
@@ -32,6 +35,8 @@ Shader::Shader (const char* filepath_vertex_shader, const char* filepath_fragmen
         std::cout << "The provided filepaths are:" << std::endl;
         std::cout << "filepath vertex shader: '" << filepath_vertex_shader << "'." << std::endl;
         std::cout << "filepath fragment shader: '" << filepath_fragment_shader << "'." << std::endl;
+        std::cout << "The current working directory is:" << std::endl;
+        std::cout << std::filesystem::current_path() << std::endl;
         return;
     }
 

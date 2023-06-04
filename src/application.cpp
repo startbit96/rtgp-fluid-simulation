@@ -51,6 +51,9 @@ void rtgp_application()
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_3, [] () { switch_scene(2); }, "LOAD SCENE 3"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_R, reload_scene, "RELOAD SCENE"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION"));
+                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_S, toggle_simulation_space_visualization, "SHOW / HIDE SIMULATION SPACE"));
+                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_D, toggle_fluid_starting_positions_visualization, "SHOW / HIDE FLUID STARTING POSITIONS"));
+                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_D, change_fluid_visualization, "CHANGE FLUID VISUALIZATION MODE"));
                 // Set the callbacks for zoom and rotation (mouse callbacks).
                 glfwSetScrollCallback(application_handler.window, scroll_callback);
                 glfwSetMouseButtonCallback(application_handler.window, mouse_button_callback);
@@ -99,8 +102,7 @@ void rtgp_application()
                 application_handler.next_state = SIMULATION_INITIALIZATION;
                 // Initialize the visualization handler.
                 std::cout << "Initialize visualization handler." << std::endl;
-                application_handler.visualization_handler.window = application_handler.window;
-                application_handler.visualization_handler.init();
+                application_handler.visualization_handler.initialize_shaders();
                 break;
             case APPLICATION_TERMINATION:
                 // Terminate the application.
@@ -131,6 +133,8 @@ void rtgp_application()
                 application_handler.visualization_handler.fluid_start_positions = application_handler.scene_handler.get_pointer_to_fluid_starting_positions();
                 application_handler.visualization_handler.vao_particles = application_handler.scene_handler.vertex_array_object;
                 application_handler.visualization_handler.number_of_particles = application_handler.scene_handler.number_of_particles;
+                // Set the point of interest for the camera.
+                application_handler.visualization_handler.camera.scene_center = application_handler.scene_handler.get_current_point_of_interest();
                 // The next state will be the running simulation.
                 application_handler.next_state = SIMULATION_RUNNING;
                 break;
@@ -157,6 +161,10 @@ void rtgp_application()
 }
 
 
+// The following functions are needed as callbacks for the GLFW input events.
+// Since we can not pass a pointer to a member function, we needed a global object
+// of Application_Handler and within the following functions the events are handled.
+
 void reload_scene ()
 {
     application_handler.next_state = SIMULATION_INITIALIZATION; 
@@ -176,6 +184,21 @@ void pause_resume_simulation ()
 void exit_application () 
 {
     application_handler.next_state = APPLICATION_TERMINATION;
+}
+
+void toggle_simulation_space_visualization ()
+{
+    application_handler.visualization_handler.toggle_simulation_space_visualization();
+}
+
+void toggle_fluid_starting_positions_visualization ()
+{
+    application_handler.visualization_handler.toggle_fluid_starting_positions_visualization();
+}
+
+void change_fluid_visualization ()
+{
+    application_handler.visualization_handler.change_fluid_visualization();
 }
 
 void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "../utils/typedef.h"
+#include "../utils/cuboid.h"
 
 class Scene_Information 
 {

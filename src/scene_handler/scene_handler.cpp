@@ -95,7 +95,6 @@ void Scene_Handler::calculate_initial_particle_positions ()
             this->available_scenes[this->current_scene_id].fluid_starting_positions[i].fill_with_particles(
                 partial_number_of_particles, this->particles, offset
             );
-            std::cout << i << " " << partial_number_of_particles << std::endl;
             offset += partial_number_of_particles;
         }
     }
@@ -137,6 +136,11 @@ Cuboid* Scene_Handler::get_pointer_to_simulation_space ()
 std::vector<Cuboid>* Scene_Handler::get_pointer_to_fluid_starting_positions ()
 {
     return &this->available_scenes[this->current_scene_id].fluid_starting_positions;
+}
+
+glm::vec3 Scene_Handler::get_current_point_of_interest ()
+{
+    return this->available_scenes[this->current_scene_id].simulation_space.get_point_of_interest();
 }
 
 void Scene_Handler::print_information () 

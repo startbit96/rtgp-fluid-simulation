@@ -35,5 +35,6 @@ class Scene_Handler
         void calculate_initial_particle_positions ();
         Cuboid* get_pointer_to_simulation_space ();
         std::vector<Cuboid>* get_pointer_to_fluid_starting_positions ();
+        glm::vec3 get_current_point_of_interest ();
         void print_information ();
 };

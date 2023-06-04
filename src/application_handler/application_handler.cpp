@@ -36,9 +36,9 @@ bool Application_Handler::initialize_window()
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     // Create a windowed mode window and its OpenGL context.
-    this->window = glfwCreateWindow(DEFAULT_WINDOW_WIDTH, 
-                                    DEFAULT_WINDOW_HEIGHT, 
-                                    DEFAULT_WINDOW_NAME, 
+    this->window = glfwCreateWindow(WINDOW_DEFAULT_WIDTH, 
+                                    WINDOW_DEFAULT_HEIGHT, 
+                                    WINDOW_DEFAULT_NAME, 
                                     NULL, NULL);
     if (this->window == NULL) {
         std::cerr << "Failed to open GLFW window." << std::endl;
@@ -85,7 +85,7 @@ bool Application_Handler::initialize ()
     if (this->initialize_window() == false) {
         return false;
     }
-    // Give the visualization handler the pointer to the window.
+    // Pass the pointer to the GLFW window down to the visualization handler.
     this->visualization_handler.window = this->window;
     return true;
 }

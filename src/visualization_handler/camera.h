@@ -3,14 +3,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define CAMERA_INITIAL_YAW_DEG          0.0f
-#define CAMERA_INITIAL_PITCH_DEG        0.0f
+#define CAMERA_INITIAL_YAW_DEG          45.0f
+#define CAMERA_INITIAL_PITCH_DEG        20.0f
 #define CAMERA_MAX_PITCH_DEG            80.0f
 #define CAMERA_MIN_PITCH_DEG            -80.0f
 #define CAMERA_ROTATION_SENSITIVITY     1.0f
-#define CAMERA_INITIAL_ZOOM             3.0f
+#define CAMERA_INITIAL_ZOOM             8.0f
 #define CAMERA_MIN_ZOOM                 2.0f
-#define CAMERA_MAX_ZOOM                 10.0f
+#define CAMERA_MAX_ZOOM                 15.0f
 #define CAMERA_ZOOM_SENSITIVITY         2.0f
 
 

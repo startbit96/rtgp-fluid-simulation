@@ -8,10 +8,9 @@
 #include "../simulation_handler/simulation_handler.h"
 #include "../visualization_handler/visualization_handler.h"
 
-#define DEFAULT_WINDOW_WIDTH        1024
-#define DEFAULT_WINDOW_HEIGHT       768
-#define DEFAULT_WINDOW_NAME         "RTGP - Fluid Simulation"
-
+// Note, the window width and height are defined in the visualization_handler.h file.
+// We need them there for the projection matrix.
+#define WINDOW_DEFAULT_NAME         "RTGP - Fluid Simulation"
 
 enum Application_State 
 {

@@ -1,6 +1,5 @@
 #include "application_handler/application_handler.h"
 
-
 // This enum type is used for the different input contexts.
 enum Input_Behavior {
     INPUT_BEHAVIOR_IDLE,
@@ -21,6 +20,9 @@ void reload_scene ();
 void switch_scene (int scene_id);
 void pause_resume_simulation ();
 void exit_application ();
+void toggle_simulation_space_visualization ();
+void toggle_fluid_starting_positions_visualization ();
+void change_fluid_visualization ();
 // Callbacks for the handling of the zoom and rotation.
 void scroll_callback(GLFWwindow* window, double x_offset, double y_offset);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
