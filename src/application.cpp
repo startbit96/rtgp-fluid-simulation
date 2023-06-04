@@ -51,6 +51,10 @@ void rtgp_application()
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_3, [] () { switch_scene(2); }, "LOAD SCENE 3"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_R, reload_scene, "RELOAD SCENE"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION"));
+                // Set the callbacks for zoom and rotation (mouse callbacks).
+                glfwSetScrollCallback(application_handler.window, scroll_callback);
+                glfwSetMouseButtonCallback(application_handler.window, mouse_button_callback);
+                glfwSetCursorPosCallback(application_handler.window, cursor_position_callback);
                 // Activate the IDLE-input-context (this is used for everything but the running simulation).
                 if (application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_IDLE) == false) {
                     // Something went wrong. Terminate the application.
@@ -172,4 +176,24 @@ void pause_resume_simulation ()
 void exit_application () 
 {
     application_handler.next_state = APPLICATION_TERMINATION;
+}
+
+void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
+{
+    application_handler.visualization_handler.camera.zoom(y_offset);
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        application_handler.visualization_handler.camera.rotation_enabled = true;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        application_handler.visualization_handler.camera.rotation_enabled = false;
+    }
+}
+
+void cursor_position_callback(GLFWwindow* window, double x_pos, double y_pos)
+{
+    application_handler.visualization_handler.camera.rotate(x_pos, y_pos);
 }

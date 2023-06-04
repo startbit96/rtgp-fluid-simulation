@@ -3,6 +3,12 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 
 *To do: include GIF of application here.*
 
+## Notes To Do
+- change the C++ types to OpenGL Types (where OpenGL is used)
+- add enough comments
+- delete shaders at the end
+- input handler for zooming
+
 ## Dependencies
 
 * Graphics Library Framework GLFW Version 3 (glfw3)  
