@@ -4,7 +4,6 @@
 #include <GLFW/glfw3.h>
 
 #include "../input_handler/input_handler.h"
-#include "../scene_handler/scene_handler.h"
 #include "../simulation_handler/simulation_handler.h"
 #include "../visualization_handler/visualization_handler.h"
 
@@ -33,7 +32,6 @@ class Application_Handler
         GLFWwindow* window;
 
         Input_Handler input_handler;
-        Scene_Handler scene_handler;
         Simulation_Handler simulation_handler;
         Visualization_Handler visualization_handler;
 

@@ -1,25 +1,36 @@
 #pragma once
 
-enum Computation_Mode {
-    COMPUTATION_MODE_CPU,
-    COMPUTATION_MODE_GPU
-};
+#include <string>
+#include <vector>
 
-class Simulation_Handler {
+#include "scene_information.h"
+
+class Simulation_Handler 
+{
     private:
-        void load_calculation_functions ();
 
     public:
-        bool is_running;
-        Computation_Mode computation_mode;
+        int current_scene_id;
+        int next_scene_id;
+        std::vector<Scene_Information> available_scenes;
+        Particle *particles;
+        unsigned int *particle_indices;
+        unsigned int number_of_particles;
+        unsigned int vertex_array_object;
+        unsigned int vertex_buffer_object;
+        unsigned int index_buffer_object;
 
         Simulation_Handler();
 
-        void calculate_next_simulation_step ();
-
-        void change_computation_mode (Computation_Mode computation_mode);
-        void toggle_computation_mode ();
-        void pause_simulation ();
-        void resume_simulation ();
-        void toggle_pause_resume_simulation ();
+        void register_new_scene (   std::string description,
+                                    Cuboid&& simulation_space,
+                                    std::vector<Cuboid> fluid_starting_positions);
+        bool delete_scene (int scene_id);
+        void delete_all_scenes ();
+        bool load_scene ();
+        void calculate_initial_particle_positions ();
+        Cuboid* get_pointer_to_simulation_space ();
+        std::vector<Cuboid>* get_pointer_to_fluid_starting_positions ();
+        glm::vec3 get_current_point_of_interest ();
+        void print_information ();
 };

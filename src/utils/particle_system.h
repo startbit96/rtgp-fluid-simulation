@@ -13,14 +13,15 @@ struct Particle
 class Particle_System 
 {
     private:
+        GLuint vertex_array_object;
+        GLuint vertex_buffer_object;
+        GLuint index_buffer_object;
+        unsigned int *particle_indices;
 
     public:
         Particle *particles;
-        unsigned int *particle_indices;
         unsigned int number_of_particles;
-        unsigned int vertex_array_object;
-        unsigned int vertex_buffer_object;
-        unsigned int index_buffer_object;
 
         void resolve_collision (float x_min, float x_max, float y_min, float y_max, float z_min, float z_max);
+        void draw ();
 };

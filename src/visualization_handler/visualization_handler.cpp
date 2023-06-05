@@ -88,6 +88,7 @@ void Visualization_Handler::visualize ()
     float current_time_stamp = glfwGetTime();
     this->camera.delta_time = current_time_stamp - this->last_time_stamp;
     this->last_time_stamp = current_time_stamp;
+
     // Update the fps and print it if a specific time has passed.
     this->frame_counter++;
     if ((current_time_stamp - this->last_time_stamp_fps) >= FPS_UPDATE_INTERVAL) {
@@ -161,7 +162,7 @@ void Visualization_Handler::visualize ()
             this->fluid_shaders[this->current_fluid_shader].program_id, "aspectRatio"), 
             this->aspect_ratio) );
 
-    // GLCall( glPointSize(3.0f) );
+    // Draw the particles.
     GLCall( glBindVertexArray(this->vao_particles) );
     GLCall( glDrawElements(GL_POINTS, this->number_of_particles, GL_UNSIGNED_INT, 0) );
     // Unbind.

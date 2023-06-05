@@ -67,24 +67,24 @@ void rtgp_application()
                 }
                 // Print interaction information for the user.
                 application_handler.input_handler.print_information();
-                // Initialize the scene handler.
-                std::cout << "Initialize scene handler." << std::endl;
+                // Initialize the simulation handler.
+                std::cout << "Initialize simulation handler." << std::endl;
                 // Register the available scenes.
-                application_handler.scene_handler.register_new_scene(
+                application_handler.simulation_handler.register_new_scene(
                     "Cube in the middle.",
                     Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
                     std::vector<Cuboid> {
                         Cuboid(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f)
                     }
                 );
-                application_handler.scene_handler.register_new_scene(
+                application_handler.simulation_handler.register_new_scene(
                     "Dam break scenario.",
                     Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
                     std::vector<Cuboid> {
                         Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f)
                     }
                 );
-                application_handler.scene_handler.register_new_scene(
+                application_handler.simulation_handler.register_new_scene(
                     "Double dam break scenario.",
                     Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
                     std::vector<Cuboid> {
@@ -95,9 +95,9 @@ void rtgp_application()
                 // Announce the first scene (id = 0) as the next scene to be loaded.
                 // It will be loaded in the SIMULATION_INITIALIZATION state, so we do not need to 
                 // check here if the scene really exists.
-                application_handler.scene_handler.next_scene_id = 0;
+                application_handler.simulation_handler.next_scene_id = 0;
                 // Print informations about the available scenes for the user.
-                application_handler.scene_handler.print_information();
+                application_handler.simulation_handler.print_information();
                 // If all went good we arrived here. So the next step is to initialize the simulation.
                 application_handler.next_state = SIMULATION_INITIALIZATION;
                 // Initialize the visualization handler.
@@ -113,7 +113,7 @@ void rtgp_application()
                 // Terminate the application.
                 std::cout << "Terminate the application." << std::endl;
                 // Free GPU ressources.
-                for (Scene_Information scene_information: application_handler.scene_handler.available_scenes) {
+                for (Scene_Information scene_information: application_handler.simulation_handler.available_scenes) {
                     scene_information.simulation_space.free_gpu_resources();
                     for (Cuboid fluid_starting_position: scene_information.fluid_starting_positions) {
                         fluid_starting_position.free_gpu_resources();
@@ -127,7 +127,7 @@ void rtgp_application()
                 // This state is used for loading the new scene or reloading the current scene.
                 // When a scene change is requested, the scene_handler checks if the desired scene is available 
                 // but does not load it yet. It just saves the desired scene. So load it now.
-                if (application_handler.scene_handler.load_scene() == false) {
+                if (application_handler.simulation_handler.load_scene() == false) {
                     // Something went wrong. Terminate the application.
                     std::cout << "An error occured while loading the scene." << std::endl;
                     application_handler.next_state = APPLICATION_TERMINATION;
@@ -136,18 +136,18 @@ void rtgp_application()
                 // Activate the input behavior for the simulation.
                 application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_SIMULATION);
                 // Load the references into the visualization handler.
-                application_handler.visualization_handler.simulation_space = application_handler.scene_handler.get_pointer_to_simulation_space();
-                application_handler.visualization_handler.fluid_start_positions = application_handler.scene_handler.get_pointer_to_fluid_starting_positions();
-                application_handler.visualization_handler.vao_particles = application_handler.scene_handler.vertex_array_object;
-                application_handler.visualization_handler.number_of_particles = application_handler.scene_handler.number_of_particles;
+                application_handler.visualization_handler.simulation_space = application_handler.simulation_handler.get_pointer_to_simulation_space();
+                application_handler.visualization_handler.fluid_start_positions = application_handler.simulation_handler.get_pointer_to_fluid_starting_positions();
+                application_handler.visualization_handler.vao_particles = application_handler.simulation_handler.vertex_array_object;
+                application_handler.visualization_handler.number_of_particles = application_handler.simulation_handler.number_of_particles;
                 // Set the point of interest for the camera.
-                application_handler.visualization_handler.camera.scene_center = application_handler.scene_handler.get_current_point_of_interest();
+                application_handler.visualization_handler.camera.scene_center = application_handler.simulation_handler.get_current_point_of_interest();
                 // The next state will be the running simulation.
                 application_handler.next_state = SIMULATION_RUNNING;
                 break;
             case SIMULATION_RUNNING:
                 // Calculate the next simulation step.
-                application_handler.simulation_handler.calculate_next_simulation_step();
+                // ...
                 // Update the visualization.
                 application_handler.visualization_handler.visualize();
                 break;
@@ -179,7 +179,7 @@ void reload_scene ()
 
 void switch_scene (int scene_id) 
 {
-    application_handler.scene_handler.next_scene_id = scene_id; 
+    application_handler.simulation_handler.next_scene_id = scene_id; 
     application_handler.next_state = SIMULATION_INITIALIZATION;
 }
 

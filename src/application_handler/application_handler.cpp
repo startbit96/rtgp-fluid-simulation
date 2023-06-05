@@ -8,7 +8,7 @@ Application_Handler::Application_Handler()
     this->current_state = IDLE;
     this->next_state = APPLICATION_INITIALIZATION;
     this->window = nullptr;
-    this->scene_handler = Scene_Handler();
+    this->simulation_handler = Simulation_Handler();
     this->input_handler = Input_Handler();
 }
 

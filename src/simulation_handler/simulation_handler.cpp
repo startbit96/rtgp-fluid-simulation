@@ -1,55 +1,154 @@
 #include "simulation_handler.h"
 
-Simulation_Handler::Simulation_Handler ()
+#include <iostream>
+#include <fstream>
+
+#include "../utils/debug.h"
+
+
+Simulation_Handler::Simulation_Handler()
 {
-    this->is_running = true;
-    this->computation_mode = COMPUTATION_MODE_CPU;
-    // Load the functions used for calculating the simulation step.
-    this->load_calculation_functions();
+    this->current_scene_id = -1;
+    this->next_scene_id = -1;
+    this->particles = NULL;
+    this->particle_indices = NULL;
+    this->number_of_particles = 125;
 }
 
-void Simulation_Handler::load_calculation_functions ()
+void Simulation_Handler::register_new_scene (   std::string description,
+                                                Cuboid&& simulation_space,
+                                                std::vector<Cuboid> fluid_starting_positions)
 {
-
-}
-
-void Simulation_Handler::calculate_next_simulation_step () 
-{
-    
-}
-
-void Simulation_Handler::change_computation_mode (Computation_Mode computation_mode)
-{
-    this->computation_mode = computation_mode;
-    this->load_calculation_functions();
-}
-
-void Simulation_Handler::toggle_computation_mode ()
-{
-    if (this->computation_mode == COMPUTATION_MODE_CPU) {
-        this->change_computation_mode(COMPUTATION_MODE_GPU);
+    Scene_Information scene_information (description, std::move(simulation_space), fluid_starting_positions);
+    if (scene_information.is_valid() == true) {
+        this->available_scenes.push_back(scene_information);
     }
     else {
-        this->change_computation_mode(COMPUTATION_MODE_CPU);
+        std::cout << "ERROR: Scene with description '" << description << "' is invalid." << std::endl;
     }
 }
 
-void Simulation_Handler::pause_simulation ()
+bool Simulation_Handler::delete_scene (int scene_id) 
 {
-    this->is_running = false;
+    if (scene_id > this->available_scenes.size() - 1) {
+        return false;
+    }
+    this->available_scenes.erase(this->available_scenes.begin() + scene_id);
+    return true;
 }
 
-void Simulation_Handler::resume_simulation ()
+void Simulation_Handler::delete_all_scenes () 
 {
-    this->is_running = true;
+    this->available_scenes.clear();
 }
 
-void Simulation_Handler::toggle_pause_resume_simulation ()
+bool Simulation_Handler::load_scene ()
 {
-    if (this->is_running == true) {
-        this->is_running = false;
+    std::cout << "Loading scene with scene_id " << this->next_scene_id << "..." << std::endl;
+    if (this->next_scene_id < 0) {
+        std::cout << "scene_id needs to be greater than or equal to zero." << std::endl;
+        return false;
+    }
+    if (this->next_scene_id > this->available_scenes.size() - 1) {
+        std::cout << "scene_id " << this->next_scene_id << " is not registered." << std::endl; 
+        return false;
+    }
+    this->current_scene_id = this->next_scene_id;
+    this->calculate_initial_particle_positions();
+    return true;
+}
+
+void Simulation_Handler::calculate_initial_particle_positions ()
+{
+    // Free the memory if it was used before.
+    if (this->particles != NULL) {
+        delete[] this->particles;
+        this->particles = NULL;
+    }
+    // Allocate new memory.
+    this->particles = new Particle[this->number_of_particles];
+    // In the scene settings we have set a number of particles. Since a scene can have
+    // multiple volumes that have to be filled with particles, divide the number of particles evenly.
+    if (this->available_scenes[this->current_scene_id].fluid_starting_positions.size() == 1) {
+        // We dont need to divide.
+        this->available_scenes[this->current_scene_id].fluid_starting_positions[0].fill_with_particles(
+            this->number_of_particles, this->particles
+        );
     }
     else {
-        this->is_running = true;
+        // We need to divide. Divide evenly by taking the volume of each cuboid into account.
+        float total_volume = 0.0f;
+        for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
+            total_volume += this->available_scenes[this->current_scene_id].fluid_starting_positions.at(i).get_volume();
+        }
+        unsigned int offset = 0;
+        for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
+            unsigned int partial_number_of_particles;
+            if (i < (this->available_scenes[this->current_scene_id].fluid_starting_positions.size() - 1)) {
+                partial_number_of_particles = (unsigned int)((float)this->number_of_particles * (float)(
+                    this->available_scenes[this->current_scene_id].fluid_starting_positions.at(i).get_volume() / total_volume
+                ));
+            }
+            else {
+                partial_number_of_particles = this->number_of_particles - offset;
+            }
+            this->available_scenes[this->current_scene_id].fluid_starting_positions[i].fill_with_particles(
+                partial_number_of_particles, this->particles, offset
+            );
+            offset += partial_number_of_particles;
+        }
     }
+
+    // Generate the OpenGL buffers for the particle system.
+    GLCall( glGenVertexArrays(1, &this->vertex_array_object) );
+    GLCall( glGenBuffers(1, &this->vertex_buffer_object) );
+    GLCall( glGenBuffers(1, &this->index_buffer_object) );
+
+    // Make vertex array object active.  
+    GLCall( glBindVertexArray(this->vertex_array_object) );
+    // Copy the data into the vertex buffer object.
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
+    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * this->number_of_particles, this->particles, GL_STATIC_DRAW) );
+    // Copy the indices into the index buffer object.
+    GLCall( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->index_buffer_object) );
+    if (this->particle_indices != NULL) {
+        delete[] this->particle_indices;
+        this->particle_indices = NULL;
+    }
+    this->particle_indices = new unsigned int[this->number_of_particles];
+    for (unsigned int i = 0; i < this->number_of_particles; i++) {
+        this->particle_indices[i] = i;
+    }
+    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_particles, this->particle_indices, GL_STATIC_DRAW) );
+    // Describe the vertex buffer layout.
+    GLCall( glEnableVertexAttribArray(0) );
+    GLCall( glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0) );
+    // Unbind.
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+    GLCall( glBindVertexArray(0) );
+}
+
+Cuboid* Simulation_Handler::get_pointer_to_simulation_space ()
+{
+    return &this->available_scenes[this->current_scene_id].simulation_space;
+}
+
+std::vector<Cuboid>* Simulation_Handler::get_pointer_to_fluid_starting_positions ()
+{
+    return &this->available_scenes[this->current_scene_id].fluid_starting_positions;
+}
+
+glm::vec3 Simulation_Handler::get_current_point_of_interest ()
+{
+    return this->available_scenes[this->current_scene_id].simulation_space.get_point_of_interest();
+}
+
+void Simulation_Handler::print_information () 
+{
+    std::cout << std::endl << "Available scenes:" << std::endl;
+    for (int i = 0; i < this->available_scenes.size(); i++) {
+        std::cout << "(" << i + 1 << ") ";
+        this->available_scenes[i].print_information();
+    }
+    std::cout << std::endl;
 }
