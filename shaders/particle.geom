@@ -3,14 +3,12 @@
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 
-uniform float pointSize;
-
 out vec2 texCoord;
 
 void main()
 {
     vec4 position = gl_in[0].gl_Position;
-    float size = pointSize;
+    float size = 0.1;
 
     gl_Position = position + vec4(-size, -size, 0.0, 0.0);
     texCoord = vec2(0.0, 0.0);

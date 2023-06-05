@@ -149,19 +149,7 @@ void Visualization_Handler::visualize ()
     GLCall( glUniformMatrix4fv(glGetUniformLocation(
         this->fluid_shaders[this->current_fluid_shader].program_id, "u_view_matrix"), 1, GL_FALSE, 
         glm::value_ptr(view_matrix)) );
-    // Set the color.
-    /*
-    glm::vec4 color (0.0f, 0.0f, 1.0f, 0.5f);
-    GLCall( glUniform4fv(glGetUniformLocation(
-        this->cuboid_shader->program_id, "u_color"), 1, 
-        glm::value_ptr(color)) );
-    */
-    // Set the point size.
-    float point_size = 0.1f;
-    GLCall( glUniform1f(glGetUniformLocation(
-            this->fluid_shaders[this->current_fluid_shader].program_id, "pointSize"), 
-            point_size) );
-    // Aspect ratio.
+    // Set the aspect ratio.
     GLCall( glUniform1f(glGetUniformLocation(
             this->fluid_shaders[this->current_fluid_shader].program_id, "aspectRatio"), 
             this->aspect_ratio) );

@@ -7,7 +7,7 @@ Particle_System::Particle_System ()
 {
     this->vertex_array_object = 0;
     this->number_of_particles = 0;
-    this->particle_initial_distance = 0.1;
+    this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
 }
 
 void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
@@ -52,6 +52,36 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     // Unbind.
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
     GLCall( glBindVertexArray(0) );
+}
+
+bool Particle_System::increase_number_of_particles ()
+{
+    // Note that if we want to increase the number of particles, we need to decrease the initial distance of the particles.
+    float new_particle_initial_distance = this->particle_initial_distance / PARTICLE_INITIAL_DISTANCE_INC_FACTOR;
+    if (new_particle_initial_distance < PARTICLE_INITIAL_DISTANCE_MIN) {
+        // We can not increase the number of particles more.
+        return false;
+    }
+    else {
+        // Increasement of number of particles can be done.
+        this->particle_initial_distance = new_particle_initial_distance;
+        return true;
+    }
+}
+
+bool Particle_System::decrease_number_of_particles ()
+{
+    // Note that if we want to decrease the number of particles, we need to increase the initial distance of the particles.
+    float new_particle_initial_distance = this->particle_initial_distance * PARTICLE_INITIAL_DISTANCE_INC_FACTOR;
+    if (new_particle_initial_distance > PARTICLE_INITIAL_DISTANCE_MAX) {
+        // We can not decrease the number of particles more.
+        return false;
+    }
+    else {
+        // Decreasement of number of particles can be done.
+        this->particle_initial_distance = new_particle_initial_distance;
+        return true;
+    }
 }
 
 void Particle_System::draw (bool unbind)

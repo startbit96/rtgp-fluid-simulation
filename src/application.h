@@ -19,6 +19,8 @@ void rtgp_application();
 void reload_scene ();
 void switch_scene (int scene_id);
 void pause_resume_simulation ();
+void increase_number_of_particles ();
+void decrease_number_of_particles ();
 void exit_application ();
 void toggle_simulation_space_visualization ();
 void toggle_fluid_starting_positions_visualization ();
