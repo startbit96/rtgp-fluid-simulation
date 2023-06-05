@@ -54,7 +54,19 @@ class Particle_System
         void find_neighbors ();
 
         // For the SPH we use different kernels, their gradient and laplacian.
-
+        // Note that normally the function returns 0 if the distance between the particles
+        // is greater than the kernels radius. Therefore we normally would need an if statement
+        // in every kernel function. But since we already do this within the find_neighbors function
+        // we do not need this here and can save some execution time.
+        // ATTENTION: if changes are made to the find_neighbors function, then we may need 
+        // the if statement here!
+        // Make sure to use some static variables for the coefficients and also to not square a 
+        // vector length since this can be faster calculated using the dot product.
+        float kernel_w_poly6 (glm::vec3 distance_vector);
+        glm::vec3 kernel_w_poly6_gradient (glm::vec3 distance_vector);
+        float kernel_w_poly6_laplacian (glm::vec3 distance_vector);
+        glm::vec3 kernel_w_spiky_gradient (glm::vec3 distance_vector);
+        float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
 
     public:
         std::vector<Particle> particles;

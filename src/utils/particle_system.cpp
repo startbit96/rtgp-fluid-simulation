@@ -155,6 +155,44 @@ void Particle_System::find_neighbors ()
     } 
 }
 
+inline float Particle_System::kernel_w_poly6 (glm::vec3 distance_vector)
+{
+    static float coefficient = 315.0f / (64.0f * M_PI * pow(SPH_KERNEL_RADIUS, 9));
+    static float kernel_radius_squared = pow(SPH_KERNEL_RADIUS, 2);
+    float distance_squared = glm::dot(distance_vector, distance_vector);
+    return coefficient * (float)pow(kernel_radius_squared - distance_squared, 3);
+}
+
+inline glm::vec3 Particle_System::kernel_w_poly6_gradient (glm::vec3 distance_vector)
+{
+    static float coefficient = -945.0f / (32.0f * M_PI * pow(SPH_KERNEL_RADIUS, 9));
+    static float kernel_radius_squared = pow(SPH_KERNEL_RADIUS, 2);
+    float distance_squared = glm::dot(distance_vector, distance_vector);
+    return (coefficient * (float)pow(kernel_radius_squared - distance_squared, 2)) * distance_vector;
+}
+
+inline float Particle_System::kernel_w_poly6_laplacian (glm::vec3 distance_vector)
+{
+    static float coefficient = -945.0f / (32.0f * M_PI * pow(SPH_KERNEL_RADIUS, 9));
+    static float kernel_radius_squared = pow(SPH_KERNEL_RADIUS, 2);
+    float distance_squared = glm::dot(distance_vector, distance_vector);
+    return coefficient * (kernel_radius_squared - distance_squared) * (3.0f * kernel_radius_squared - 7.0f * distance_squared);
+}
+
+inline glm::vec3 Particle_System::kernel_w_spiky_gradient (glm::vec3 distance_vector)
+{
+    static float coefficient = -45.0f / (M_PI * pow(SPH_KERNEL_RADIUS, 6));
+    float distance = glm::length(distance_vector);
+    return coefficient * (float)pow(SPH_KERNEL_RADIUS - distance, 2) * glm::normalize(distance_vector);
+}
+
+inline float Particle_System::kernel_w_viscosity_laplacian (glm::vec3 distance_vector)
+{
+    static float coefficient = 45.0f / (M_PI * pow(SPH_KERNEL_RADIUS, 6));
+    float distance = glm::length(distance_vector);
+    return coefficient * (SPH_KERNEL_RADIUS - distance);
+}
+
 void Particle_System::simulate ()
 {
     this->calculate_spatial_grid();
