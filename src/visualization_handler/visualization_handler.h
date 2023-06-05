@@ -70,8 +70,6 @@ class Visualization_Handler
         Cuboid *simulation_space;
         std::vector<Cuboid> *fluid_start_positions;
         Particle_System *particle_system;
-        unsigned int vao_particles;
-        unsigned int number_of_particles;
         // Our camera that handles the calculation of the view matrix.
         // It is an arc ball camera.
         Camera camera;

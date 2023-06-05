@@ -10,8 +10,6 @@ Simulation_Handler::Simulation_Handler()
 {
     this->current_scene_id = -1;
     this->next_scene_id = -1;
-    this->number_of_particles = 0;
-    this->particle_initial_distance = 0.2;
 }
 
 void Simulation_Handler::register_new_scene (   std::string description,
@@ -53,47 +51,18 @@ bool Simulation_Handler::load_scene ()
         return false;
     }
     this->current_scene_id = this->next_scene_id;
-    this->calculate_initial_particle_positions();
+    this->particle_system.generate_initial_particles(this->available_scenes[current_scene_id].fluid_starting_positions);
     return true;
 }
 
-void Simulation_Handler::calculate_initial_particle_positions ()
+void Simulation_Handler::print_scene_information () 
 {
-    // Free the memory if it was used before.
-    this->particles.clear();
-    // Fill all cuboids with particles.
-    for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
-        this->available_scenes[this->current_scene_id].fluid_starting_positions[i].fill_with_particles(
-            this->particle_initial_distance, 
-            this->particles
-        );
+    std::cout << std::endl << "Available scenes:" << std::endl;
+    for (int i = 0; i < this->available_scenes.size(); i++) {
+        std::cout << "(" << i + 1 << ") ";
+        this->available_scenes[i].print_information();
     }
-    // Get the number of particles.
-    this->number_of_particles = this->particles.size();
-
-    // Generate the OpenGL buffers for the particle system.
-    GLCall( glGenVertexArrays(1, &this->vertex_array_object) );
-    GLCall( glGenBuffers(1, &this->vertex_buffer_object) );
-    GLCall( glGenBuffers(1, &this->index_buffer_object) );
-
-    // Make vertex array object active.  
-    GLCall( glBindVertexArray(this->vertex_array_object) );
-    // Copy the data into the vertex buffer object.
-    GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
-    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * this->number_of_particles, &this->particles[0], GL_STATIC_DRAW) );
-    // Copy the indices into the index buffer object.
-    GLCall( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->index_buffer_object) );
-    this->particle_indices.clear();
-    for (unsigned int i = 0; i < this->number_of_particles; i++) {
-        this->particle_indices.push_back(i);
-    }
-    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_particles, &this->particle_indices[0], GL_STATIC_DRAW) );
-    // Describe the vertex buffer layout.
-    GLCall( glEnableVertexAttribArray(0) );
-    GLCall( glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0) );
-    // Unbind.
-    GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
-    GLCall( glBindVertexArray(0) );
+    std::cout << std::endl;
 }
 
 Cuboid* Simulation_Handler::get_pointer_to_simulation_space ()
@@ -106,17 +75,12 @@ std::vector<Cuboid>* Simulation_Handler::get_pointer_to_fluid_starting_positions
     return &this->available_scenes[this->current_scene_id].fluid_starting_positions;
 }
 
+Particle_System* Simulation_Handler::get_pointer_to_particle_system ()
+{
+    return &this->particle_system;
+}
+
 glm::vec3 Simulation_Handler::get_current_point_of_interest ()
 {
     return this->available_scenes[this->current_scene_id].simulation_space.get_point_of_interest();
-}
-
-void Simulation_Handler::print_information () 
-{
-    std::cout << std::endl << "Available scenes:" << std::endl;
-    for (int i = 0; i < this->available_scenes.size(); i++) {
-        std::cout << "(" << i + 1 << ") ";
-        this->available_scenes[i].print_information();
-    }
-    std::cout << std::endl;
 }

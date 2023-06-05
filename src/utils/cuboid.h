@@ -1,8 +1,10 @@
 #pragma once
 
+#include <GL/glew.h>
+#include <glm/glm.hpp>
 #include <vector>
 
-#include "particle_system.h"
+#include "particle.h"
 
 // Cuboid class for the definition of the simulation space
 // and the starting volume(s) of the fluid.
@@ -19,9 +21,9 @@ class Cuboid
         float z_max;
         std::vector<glm::vec3> vertices;
         std::vector<unsigned int> indices;
-        unsigned int vertex_buffer_object;
-        unsigned int index_buffer_object;
-        unsigned int vertex_array_object;
+        GLuint vertex_buffer_object;
+        GLuint index_buffer_object;
+        GLuint vertex_array_object;
 
         Cuboid ();
         Cuboid (float x_min, float x_max, float y_min, float y_max, float z_min, float z_max);

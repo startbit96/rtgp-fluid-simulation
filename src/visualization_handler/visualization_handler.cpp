@@ -94,7 +94,9 @@ void Visualization_Handler::visualize ()
     if ((current_time_stamp - this->last_time_stamp_fps) >= FPS_UPDATE_INTERVAL) {
         float fps = float(this->frame_counter) / (current_time_stamp - this->last_time_stamp_fps);
         std::stringstream window_title;
-        window_title << WINDOW_DEFAULT_NAME << " " << " [" << fps << " FPS]";
+        window_title << WINDOW_DEFAULT_NAME << "  [ " 
+            << this->particle_system->number_of_particles << " particles  |  "
+            << fps << " FPS ]";
         glfwSetWindowTitle(this->window, window_title.str().c_str());
         this->last_time_stamp_fps = current_time_stamp;
         this->frame_counter = 0;
@@ -165,8 +167,7 @@ void Visualization_Handler::visualize ()
             this->aspect_ratio) );
 
     // Draw the particles.
-    GLCall( glBindVertexArray(this->vao_particles) );
-    GLCall( glDrawElements(GL_POINTS, this->number_of_particles, GL_UNSIGNED_INT, 0) );
+    this->particle_system->draw();
     // Unbind.
     GLCall( glBindVertexArray(0) );
     // Swap front and back buffers.

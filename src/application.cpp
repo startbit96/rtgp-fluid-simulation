@@ -97,7 +97,7 @@ void rtgp_application()
                 // check here if the scene really exists.
                 application_handler.simulation_handler.next_scene_id = 0;
                 // Print informations about the available scenes for the user.
-                application_handler.simulation_handler.print_information();
+                application_handler.simulation_handler.print_scene_information();
                 // If all went good we arrived here. So the next step is to initialize the simulation.
                 application_handler.next_state = SIMULATION_INITIALIZATION;
                 // Initialize the visualization handler.
@@ -138,8 +138,7 @@ void rtgp_application()
                 // Load the references into the visualization handler.
                 application_handler.visualization_handler.simulation_space = application_handler.simulation_handler.get_pointer_to_simulation_space();
                 application_handler.visualization_handler.fluid_start_positions = application_handler.simulation_handler.get_pointer_to_fluid_starting_positions();
-                application_handler.visualization_handler.vao_particles = application_handler.simulation_handler.vertex_array_object;
-                application_handler.visualization_handler.number_of_particles = application_handler.simulation_handler.number_of_particles;
+                application_handler.visualization_handler.particle_system = application_handler.simulation_handler.get_pointer_to_particle_system();
                 // Set the point of interest for the camera.
                 application_handler.visualization_handler.camera.scene_center = application_handler.simulation_handler.get_current_point_of_interest();
                 // The next state will be the running simulation.

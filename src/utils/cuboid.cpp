@@ -99,9 +99,11 @@ glm::vec3 Cuboid::get_point_of_interest ()
 
 void Cuboid::fill_with_particles (float particle_distance, std::vector<Particle>& particles)
 {
-    for (float x = this->x_min; x <= this->x_max; x += particle_distance) {
-        for (float y = this->y_min; y <= this->y_max; y += particle_distance) {
-            for (float z = this->z_min; z <= this->z_max; z += particle_distance) {
+    // In order to not have particles at the borders to begin with, we do not set the particles at the 
+    // surface of the cuboid but only within.
+    for (float x = this->x_min + particle_distance / 2; x < this->x_max; x += particle_distance) {
+        for (float y = this->y_min + particle_distance / 2; y < this->y_max; y += particle_distance) {
+            for (float z = this->z_min + particle_distance / 2; z < this->z_max; z += particle_distance) {
                 particles.push_back(Particle{ glm::vec3(x, y, z) });
             }
         }
