@@ -104,7 +104,7 @@ void Cuboid::fill_with_particles (float particle_distance, std::vector<Particle>
     for (float x = this->x_min + particle_distance / 2; x < this->x_max; x += particle_distance) {
         for (float y = this->y_min + particle_distance / 2; y < this->y_max; y += particle_distance) {
             for (float z = this->z_min + particle_distance / 2; z < this->z_max; z += particle_distance) {
-                particles.push_back(Particle{ glm::vec3(x, y, z) });
+                particles.push_back(get_default_particle(x, y ,z));
             }
         }
     }

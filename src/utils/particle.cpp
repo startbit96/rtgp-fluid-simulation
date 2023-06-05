@@ -5,7 +5,9 @@
 Particle get_default_particle(float x, float y, float z)
 {
     return Particle {
-        glm::vec3(x, y ,z)
+        glm::vec3(x, y ,z),
+        0.0f,
+        glm::vec3(0.0f, -2.0f, 0.0f)
     };
 }
 
@@ -18,4 +20,7 @@ void describe_particle_memory_layout ()
     // Density.
     GLCall( glEnableVertexAttribArray(1) );
     GLCall( glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Particle), (GLvoid*)(offsetof(Particle, density))) );
+    // Velocity.
+    GLCall( glEnableVertexAttribArray(2) );
+    GLCall( glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (GLvoid*)(offsetof(Particle, velocity))) );
 }

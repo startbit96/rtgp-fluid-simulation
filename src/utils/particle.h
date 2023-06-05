@@ -7,6 +7,7 @@ struct Particle
 {
     glm::vec3 position;
     float density;
+    glm::vec3 velocity;
 };
 
 // A function that returns particle based on the given x, y, z position.

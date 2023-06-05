@@ -57,14 +57,16 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     GLCall( glBindVertexArray(0) );
 }
 
-void Particle_System::initialize_spatial_grid (Cuboid simulation_space)
+void Particle_System::set_simulation_space (Cuboid* simulation_space)
 {
     // Calculate number of cells and offset for the hash formula.
-    int number_of_cells_x = ceil((simulation_space.x_max - simulation_space.x_min) / SPH_KERNEL_RADIUS);
-    int number_of_cells_y = ceil((simulation_space.y_max - simulation_space.y_min) / SPH_KERNEL_RADIUS);
-    int number_of_cells_z = ceil((simulation_space.z_max - simulation_space.z_min) / SPH_KERNEL_RADIUS);
+    int number_of_cells_x = ceil((simulation_space->x_max - simulation_space->x_min) / SPH_KERNEL_RADIUS);
+    int number_of_cells_y = ceil((simulation_space->y_max - simulation_space->y_min) / SPH_KERNEL_RADIUS);
+    int number_of_cells_z = ceil((simulation_space->z_max - simulation_space->z_min) / SPH_KERNEL_RADIUS);
     this->number_of_cells = number_of_cells_x * number_of_cells_y * number_of_cells_z;
-    this->hash_offset = glm::vec3(simulation_space.x_min, simulation_space.y_min, simulation_space.z_min);
+    this->hash_offset = glm::vec3(simulation_space->x_min, simulation_space->y_min, simulation_space->z_min);
+    // We need a pointer to the simulation space for resolving the collision.
+    this->simulation_space = simulation_space;
 }
 
 bool Particle_System::increase_number_of_particles ()
@@ -117,44 +119,6 @@ inline int Particle_System::hash (glm::vec3 position)
     ) % this->number_of_cells;
 }
 
-void Particle_System::calculate_spatial_grid ()
-{
-    // Clear it first.
-    this->spatial_hash_grid.clear();
-    // Now insert every particle based on its position.
-    for (int i = 0; i < this->number_of_particles; i++) {
-        this->spatial_hash_grid.insert(std::make_pair(
-            Particle_System::hash(this->particles[i].position), 
-            this->particles[i]
-        ));
-    }
-}
-
-void Particle_System::find_neighbors ()
-{
-    // Clear the vector of neighbor lists and announce the size of the vector.
-    this->neighbor_list.clear();
-    this->neighbor_list.resize(this->number_of_particles);
-    for (int i = 0; i < this->number_of_particles; i++) {
-        // Look for all particles into the neighbouring 26 cells.
-        for (int look_x = -1; look_x <= 1; look_x++) {
-            for (int look_y = -1; look_y <= 1; look_y++) {
-                for (int look_z = -1; look_z <= 1; look_z++) {
-                    glm::vec3 look_position = this->particles[i].position + glm::vec3(look_x, look_y, look_z) * SPH_KERNEL_RADIUS;
-                    int look_key = this->hash(look_position);
-                    auto range = this->spatial_hash_grid.equal_range(look_key);
-                    for (auto it = range.first; it != range.second; ++it) {
-                        // If the distance to this particle is less than the kernel radius, we need this one.
-                        if (glm::distance(this->particles[i].position, it->second.position) < SPH_KERNEL_RADIUS) {
-                            this->neighbor_list[i].push_back(it->second);
-                        }
-                    }
-                }
-            }
-        }
-    } 
-}
-
 inline float Particle_System::kernel_w_poly6 (glm::vec3 distance_vector)
 {
     static float coefficient = 315.0f / (64.0f * M_PI * pow(SPH_KERNEL_RADIUS, 9));
@@ -193,8 +157,48 @@ inline float Particle_System::kernel_w_viscosity_laplacian (glm::vec3 distance_v
     return coefficient * (SPH_KERNEL_RADIUS - distance);
 }
 
-void Particle_System::calculate_density ()
+void Particle_System::simulate ()
 {
+    // Calculate the spatial grid. Therefore clear it first.
+    this->spatial_hash_grid.clear();
+    // Now insert every particle based on its position.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        this->spatial_hash_grid.insert(std::make_pair(
+            Particle_System::hash(this->particles[i].position), 
+            this->particles[i]
+        ));
+    }
+
+    // Find the neighbors of each particle.
+    // Clear the vector of neighbor lists and announce the size of the vector.
+    this->neighbor_list.clear();
+    this->neighbor_list.resize(this->number_of_particles);
+    // Mueller et al. suggested to store the neighbouring particles on the grid structure
+    // itself rather than as references, so that due to memory locality the hit cache rate 
+    // will increase significantly.
+    // The problem is, that if we save them directly there, the density of the particle is
+    // missing since the density is not calculated yet and the stored density is the old one 
+    // from the last iteration.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        // Look for all particles into the neighbouring 26 cells.
+        for (int look_x = -1; look_x <= 1; look_x++) {
+            for (int look_y = -1; look_y <= 1; look_y++) {
+                for (int look_z = -1; look_z <= 1; look_z++) {
+                    glm::vec3 look_position = this->particles[i].position + glm::vec3(look_x, look_y, look_z) * SPH_KERNEL_RADIUS;
+                    int look_key = this->hash(look_position);
+                    auto range = this->spatial_hash_grid.equal_range(look_key);
+                    for (auto it = range.first; it != range.second; ++it) {
+                        // If the distance to this particle is less than the kernel radius, we need this one.
+                        if (glm::distance(this->particles[i].position, it->second.position) < SPH_KERNEL_RADIUS) {
+                            this->neighbor_list[i].push_back(it->second);
+                        }
+                    }
+                }
+            }
+        }
+    } 
+
+    // Calculate the density.
     for (int i = 0; i < this->number_of_particles; i++) {
         this->particles[i].density = 0;
         for (int idx_neighbor = 0; idx_neighbor < this->neighbor_list[i].size(); idx_neighbor++) {
@@ -202,17 +206,52 @@ void Particle_System::calculate_density ()
                 this->kernel_w_poly6(this->neighbor_list[i][idx_neighbor].position - this->particles[i].position);
         }
     }
-}
 
-void Particle_System::simulate ()
-{
-    this->calculate_spatial_grid();
-    this->find_neighbors();
-    this->calculate_density();
+    // Compute the new position based on the velocity.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        this->particles[i].position = this->particles[i].position + this->particles[i].velocity * SPH_SIMULATION_TIME_STEP;
+    }
+
+    // Resolve collision and if a collision happened, reset the position, inverse the velocities component
+    // and apply a collision damping.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        // x.
+        if (this->particles[i].position.x < this->simulation_space->x_min) {
+            this->particles[i].position.x = this->simulation_space->x_min;
+            this->particles[i].velocity.x = -this->particles[i].velocity.x * SPH_COLLISION_DAMPING;
+        }
+        else if (this->particles[i].position.x > this->simulation_space->x_max) {
+            this->particles[i].position.x = this->simulation_space->x_max;
+            this->particles[i].velocity.x = -this->particles[i].velocity.x * SPH_COLLISION_DAMPING;
+        }
+        // y.
+        if (this->particles[i].position.y < this->simulation_space->y_min) {
+            this->particles[i].position.y = this->simulation_space->y_min;
+            this->particles[i].velocity.y = -this->particles[i].velocity.y * SPH_COLLISION_DAMPING;
+        }
+        else if (this->particles[i].position.y > this->simulation_space->y_max) {
+            this->particles[i].position.y = this->simulation_space->y_max;
+            this->particles[i].velocity.y = -this->particles[i].velocity.y * SPH_COLLISION_DAMPING;
+        }
+        // z.
+        if (this->particles[i].position.z < this->simulation_space->z_min) {
+            this->particles[i].position.z = this->simulation_space->z_min;
+            this->particles[i].velocity.z = -this->particles[i].velocity.z * SPH_COLLISION_DAMPING;
+        }
+        else if (this->particles[i].position.z > this->simulation_space->z_max) {
+            this->particles[i].position.z = this->simulation_space->z_max;
+            this->particles[i].velocity.z = -this->particles[i].velocity.z * SPH_COLLISION_DAMPING;
+        }
+    }
 }
 
 void Particle_System::draw (bool unbind)
 {
+    // Update the particles data in the vertex buffer object.
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
+    GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Particle) * this->number_of_particles, &this->particles[0]) );
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+    // Draw the particles using the vertex array object.
     GLCall( glBindVertexArray(this->vertex_array_object) );
     GLCall( glDrawElements(GL_POINTS, this->number_of_particles, GL_UNSIGNED_INT, 0) );
     // In order to save a few unbind-calls, do this only if neccessary. 

@@ -53,7 +53,7 @@ bool Simulation_Handler::load_scene ()
     }
     this->current_scene_id = this->next_scene_id;
     this->particle_system.generate_initial_particles(this->available_scenes[current_scene_id].fluid_starting_positions);
-    this->particle_system.initialize_spatial_grid(this->available_scenes[current_scene_id].simulation_space);
+    this->particle_system.set_simulation_space(&this->available_scenes[current_scene_id].simulation_space);
     return true;
 }
 

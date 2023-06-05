@@ -28,6 +28,8 @@
 // SPH related defines.
 #define SPH_KERNEL_RADIUS                       0.01f
 #define SPH_PARTICLE_MASS                       28.0f
+#define SPH_SIMULATION_TIME_STEP                0.01f
+#define SPH_COLLISION_DAMPING                   0.95f
 
 // Particle System.
 class Particle_System 
@@ -38,6 +40,7 @@ class Particle_System
         GLuint index_buffer_object;
         std::vector<unsigned int> particle_indices;
         float particle_initial_distance;
+        Cuboid* simulation_space;
 
         // Within SPH, the new values of a particle are calculated using the values
         // of the particles nearby. For the speed of this application it is necessary to 
@@ -48,11 +51,8 @@ class Particle_System
         int number_of_cells;
         std::unordered_multimap<int, Particle> spatial_hash_grid;
         std::vector<std::vector<Particle>> neighbor_list;
-
         int discretize_value (float value);
         int hash (glm::vec3 position);
-        void calculate_spatial_grid ();
-        void find_neighbors ();
 
         // For the SPH we use different kernels, their gradient and laplacian.
         // Note that normally the function returns 0 if the distance between the particles
@@ -68,9 +68,6 @@ class Particle_System
         float kernel_w_poly6_laplacian (glm::vec3 distance_vector);
         glm::vec3 kernel_w_spiky_gradient (glm::vec3 distance_vector);
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
-
-        // Force calculation.
-        void calculate_density ();
 
     public:
         std::vector<Particle> particles;
@@ -88,7 +85,7 @@ class Particle_System
         // to be filled an the particle_initial_distance.
         // It also generates the OpenGL needed buffers like the vertex array object.
         void generate_initial_particles (std::vector<Cuboid>& cuboids);
-        void initialize_spatial_grid (Cuboid simulation_space);
+        void set_simulation_space (Cuboid* simulation_space);
         // Note that these functions do not call the generate_initial_particles function, this
         // has to be done by the application. It simply increases / decreases the distance between
         // initial particles so that with the next call of generate_initial_particles it will take effect.
