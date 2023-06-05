@@ -10,9 +10,8 @@ Simulation_Handler::Simulation_Handler()
 {
     this->current_scene_id = -1;
     this->next_scene_id = -1;
-    this->particles = NULL;
-    this->particle_indices = NULL;
-    this->number_of_particles = 125;
+    this->number_of_particles = 0;
+    this->particle_initial_distance = 0.2;
 }
 
 void Simulation_Handler::register_new_scene (   std::string description,
@@ -61,43 +60,16 @@ bool Simulation_Handler::load_scene ()
 void Simulation_Handler::calculate_initial_particle_positions ()
 {
     // Free the memory if it was used before.
-    if (this->particles != NULL) {
-        delete[] this->particles;
-        this->particles = NULL;
-    }
-    // Allocate new memory.
-    this->particles = new Particle[this->number_of_particles];
-    // In the scene settings we have set a number of particles. Since a scene can have
-    // multiple volumes that have to be filled with particles, divide the number of particles evenly.
-    if (this->available_scenes[this->current_scene_id].fluid_starting_positions.size() == 1) {
-        // We dont need to divide.
-        this->available_scenes[this->current_scene_id].fluid_starting_positions[0].fill_with_particles(
-            this->number_of_particles, this->particles
+    this->particles.clear();
+    // Fill all cuboids with particles.
+    for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
+        this->available_scenes[this->current_scene_id].fluid_starting_positions[i].fill_with_particles(
+            this->particle_initial_distance, 
+            this->particles
         );
     }
-    else {
-        // We need to divide. Divide evenly by taking the volume of each cuboid into account.
-        float total_volume = 0.0f;
-        for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
-            total_volume += this->available_scenes[this->current_scene_id].fluid_starting_positions.at(i).get_volume();
-        }
-        unsigned int offset = 0;
-        for (int i = 0; i < this->available_scenes[this->current_scene_id].fluid_starting_positions.size(); i++) {
-            unsigned int partial_number_of_particles;
-            if (i < (this->available_scenes[this->current_scene_id].fluid_starting_positions.size() - 1)) {
-                partial_number_of_particles = (unsigned int)((float)this->number_of_particles * (float)(
-                    this->available_scenes[this->current_scene_id].fluid_starting_positions.at(i).get_volume() / total_volume
-                ));
-            }
-            else {
-                partial_number_of_particles = this->number_of_particles - offset;
-            }
-            this->available_scenes[this->current_scene_id].fluid_starting_positions[i].fill_with_particles(
-                partial_number_of_particles, this->particles, offset
-            );
-            offset += partial_number_of_particles;
-        }
-    }
+    // Get the number of particles.
+    this->number_of_particles = this->particles.size();
 
     // Generate the OpenGL buffers for the particle system.
     GLCall( glGenVertexArrays(1, &this->vertex_array_object) );
@@ -108,18 +80,14 @@ void Simulation_Handler::calculate_initial_particle_positions ()
     GLCall( glBindVertexArray(this->vertex_array_object) );
     // Copy the data into the vertex buffer object.
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
-    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * this->number_of_particles, this->particles, GL_STATIC_DRAW) );
+    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * this->number_of_particles, &this->particles[0], GL_STATIC_DRAW) );
     // Copy the indices into the index buffer object.
     GLCall( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->index_buffer_object) );
-    if (this->particle_indices != NULL) {
-        delete[] this->particle_indices;
-        this->particle_indices = NULL;
-    }
-    this->particle_indices = new unsigned int[this->number_of_particles];
+    this->particle_indices.clear();
     for (unsigned int i = 0; i < this->number_of_particles; i++) {
-        this->particle_indices[i] = i;
+        this->particle_indices.push_back(i);
     }
-    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_particles, this->particle_indices, GL_STATIC_DRAW) );
+    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_particles, &this->particle_indices[0], GL_STATIC_DRAW) );
     // Describe the vertex buffer layout.
     GLCall( glEnableVertexAttribArray(0) );
     GLCall( glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0) );

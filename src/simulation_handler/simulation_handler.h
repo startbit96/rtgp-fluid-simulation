@@ -13,9 +13,10 @@ class Simulation_Handler
         int current_scene_id;
         int next_scene_id;
         std::vector<Scene_Information> available_scenes;
-        Particle *particles;
-        unsigned int *particle_indices;
+        std::vector<Particle> particles;
+        std::vector<unsigned int> particle_indices;
         unsigned int number_of_particles;
+        float particle_initial_distance;
         unsigned int vertex_array_object;
         unsigned int vertex_buffer_object;
         unsigned int index_buffer_object;

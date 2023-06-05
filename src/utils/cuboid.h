@@ -38,7 +38,7 @@ class Cuboid
         // something else. For the implemented formula check the function.
         glm::vec3 get_point_of_interest ();
         // A function that fills a cuboid evenly with particles (for the start of the simulation).
-        void fill_with_particles (unsigned int number_of_particles, Particle* particles, unsigned int offset = 0);
+        void fill_with_particles (float particle_distance, std::vector<Particle>& particles);
         // Draws the object. Note that the shader will be selected and activated by the visualization handler.
         void draw (bool unbind = false);
         // Deletes the GPU ressources (vertex array, vertex buffer, index buffer).

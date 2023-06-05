@@ -97,31 +97,15 @@ glm::vec3 Cuboid::get_point_of_interest ()
     );
 }
 
-void Cuboid::fill_with_particles (unsigned int number_of_particles, Particle* particles, unsigned int offset)
+void Cuboid::fill_with_particles (float particle_distance, std::vector<Particle>& particles)
 {
-    // Calculate the spacing between the particles.
-    float volume = this->get_volume();
-    float spacing = std::cbrt(volume / number_of_particles); 
-    
-    unsigned int number_of_calculated_particles = 0;
-    Particle *current_particle = &particles[0] + offset;
-    while (number_of_calculated_particles < number_of_particles) {
-        for (float x = this->x_min + spacing / 2; x < this->x_max; x += spacing) {
-            for (float y = this->y_min + spacing / 2; y < this->y_max; y += spacing) {
-                for (float z = this->z_min + spacing / 2; z < this->z_max; z += spacing) {
-                    current_particle->position = glm::vec3(x, y, z);
-                    current_particle++;
-                    number_of_calculated_particles++;
-                    
-                    if (number_of_calculated_particles >= number_of_particles) {
-                        std::cout << number_of_calculated_particles << std::endl;
-                        return;
-                    }
-                }
+    for (float x = this->x_min; x <= this->x_max; x += particle_distance) {
+        for (float y = this->y_min; y <= this->y_max; y += particle_distance) {
+            for (float z = this->z_min; z <= this->z_max; z += particle_distance) {
+                particles.push_back(Particle{ glm::vec3(x, y, z) });
             }
         }
     }
-    std::cout << number_of_calculated_particles << std::endl;
 }
 
 void Cuboid::draw (bool unbind)

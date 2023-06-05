@@ -3,7 +3,6 @@
 layout(location = 0) out vec4 color;
 
 in vec2 texCoord;
-uniform vec4 u_color;
 uniform float aspectRatio;
 
 void main()
@@ -23,5 +22,5 @@ void main()
         discard;
 
     // Set the color of the fragment
-    color = u_color;
+    color = vec4(0.1, 0.2, 1.0 - dist, 1.0);
 }

@@ -148,10 +148,12 @@ void Visualization_Handler::visualize ()
         this->fluid_shaders[this->current_fluid_shader].program_id, "u_view_matrix"), 1, GL_FALSE, 
         glm::value_ptr(view_matrix)) );
     // Set the color.
+    /*
     glm::vec4 color (0.0f, 0.0f, 1.0f, 0.5f);
     GLCall( glUniform4fv(glGetUniformLocation(
         this->cuboid_shader->program_id, "u_color"), 1, 
         glm::value_ptr(color)) );
+    */
     // Set the point size.
     float point_size = 0.1f;
     GLCall( glUniform1f(glGetUniformLocation(
