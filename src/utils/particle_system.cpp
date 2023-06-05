@@ -1,12 +1,13 @@
 #include "particle_system.h"
 
 #include "debug.h"
-
+#include "helper.h"
 
 Particle_System::Particle_System ()
 {
     this->vertex_array_object = 0;
     this->number_of_particles = 0;
+    this->number_of_particles_as_string = to_string_with_separator(this->number_of_particles);
     this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
 }
 
@@ -20,6 +21,7 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     }
     // Get the number of particles.
     this->number_of_particles = this->particles.size();
+    this->number_of_particles_as_string = to_string_with_separator(this->number_of_particles);
 
     // Clear the buffers if there is something to clear.
     this->free_gpu_resources();

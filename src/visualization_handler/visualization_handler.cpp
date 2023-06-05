@@ -95,7 +95,7 @@ void Visualization_Handler::visualize ()
         float fps = float(this->frame_counter) / (current_time_stamp - this->last_time_stamp_fps);
         std::stringstream window_title;
         window_title << WINDOW_DEFAULT_NAME << "  [ " 
-            << this->particle_system->number_of_particles << " particles  |  "
+            << this->particle_system->number_of_particles_as_string << " particles  |  "
             << fps << " FPS ]";
         glfwSetWindowTitle(this->window, window_title.str().c_str());
         this->last_time_stamp_fps = current_time_stamp;

@@ -2,11 +2,17 @@
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <string>
 
 #include "particle.h"
 #include "cuboid.h"
 
 
+// The number of initial particles depends on the fluids cuboids
+// and the distance between the initial particles. This distance can
+// be modified during runtime. Define here the min and max distance and
+// also the factor. Make sure that the values for init, min and max are 
+// within the power series of the inc factor.
 #define PARTICLE_INITIAL_DISTANCE_INIT          0.064f
 #define PARTICLE_INITIAL_DISTANCE_MIN           0.008f
 #define PARTICLE_INITIAL_DISTANCE_MAX           0.128f
@@ -25,6 +31,12 @@ class Particle_System
     public:
         std::vector<Particle> particles;
         unsigned int number_of_particles;
+        // The visualization handler will show the number of particles at the title
+        // of the window. In order to make it more readable we save in this string
+        // the number of particles with thousand separators, so that the visualization
+        // handler can directly use this. The variable is only updated when the number of 
+        // particles change.
+        std::string number_of_particles_as_string;
 
         Particle_System ();
 
