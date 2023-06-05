@@ -1,6 +1,9 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include <string>
+#include <unordered_map>
 
 enum Shader_Type
 {
@@ -26,6 +29,12 @@ class Shader
     private:
         static bool check_compile_errors (unsigned int shader_id, Shader_Type shader_type);
         static std::string get_code_from_file (const char* filepath);
+        // A cache for the location of a uniform.
+        std::unordered_map<std::string, int> uniform_location_cache;
+        // This function returns the location of a uniform within the shader program.
+        // If the location was requested, it will be stored in a cache.
+        // If the location will be requested again, the cached value will be used.
+        int get_uniform_location (const std::string& name);
 
     public:
         unsigned int program_id;
@@ -38,5 +47,12 @@ class Shader
         void use_program ();
         void delete_program ();
 
-        
+        // These functions can be used to set the uniforms of the shader.
+        void set_uniform_1i (const std::string& name, int value);
+        void set_uniform_1f (const std::string& name, float value);
+        void set_uniform_3f (const std::string& name, float f0, float f1, float f2);
+        void set_uniform_3fv (const std::string& name, const glm::vec3& vector);
+        void set_uniform_4f (const std::string& name, float f0, float f1, float f2, float f3);
+        void set_uniform_4fv (const std::string& name, const glm::vec4& vector);
+        void set_uniform_mat4fv (const std::string& name, const glm::mat4& matrix);
 };

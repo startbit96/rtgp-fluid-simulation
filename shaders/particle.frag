@@ -2,25 +2,25 @@
 
 layout(location = 0) out vec4 color;
 
-in vec2 texCoord;
-uniform float aspectRatio;
+in vec2 tex_coord;
+uniform float u_aspect_ratio;
 
 void main()
 {
-    vec2 center = vec2(0.5, 0.5); // Center of the circle
-    float radius = 0.5; // Radius of the circle
+    // Center and radius of the circle. 
+    // The tex_coords range from 0 to 1 in both dimensions.
+    vec2 center = vec2(0.5, 0.5);
+    float radius = 0.5;
 
-    // Adjust the radius based on the aspect ratio
-    float adjustedRadius = radius * aspectRatio;
-
-    // Calculate the distance from the fragment to the center, taking aspect ratio into account
-    vec2 distance = (texCoord - center) * vec2(aspectRatio, 1.0);
-    float dist = length(distance);
+    // Calculate the distance from the fragment to the center. 
+    // Take the aspect ratio into account.
+    vec2 dist_vector = (tex_coord - center) * vec2(u_aspect_ratio, 1.0);
+    float distance_from_center = length(dist_vector);
 
     // If the distance is greater than the radius, discard the fragment
-    if (dist > radius)
+    if (distance_from_center > radius)
         discard;
 
     // Set the color of the fragment
-    color = vec4(0.1, 0.2, 1.0 - dist, 1.0);
+    color = vec4(0.1, 0.2, 1.0 - distance_from_center, 1.0);
 }

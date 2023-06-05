@@ -102,35 +102,28 @@ void Visualization_Handler::visualize ()
         this->frame_counter = 0;
     }
     
+    // Get the view matrix.
+    glm::mat4 view_matrix = camera.get_view_matrix();
+
     // Visualize the cuboids if desired.
     if ((this->draw_simulation_space == true)|| (this->draw_fluid_starting_positions == true)) {
         // Wireframe mode.
         GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) );
         // Activate the desired shader program.
         this->cuboid_shader->use_program();
-        // Set the projection matrix.
-        GLCall( glUniformMatrix4fv(glGetUniformLocation(
-            this->cuboid_shader->program_id, "u_projection_matrix"), 1, GL_FALSE, 
-            glm::value_ptr(this->projection_matrix)) );
-        // Set the viewmatrix.
-        glm::mat4 view_matrix = camera.get_view_matrix();
-        GLCall( glUniformMatrix4fv(glGetUniformLocation(
-            this->cuboid_shader->program_id, "u_view_matrix"), 1, GL_FALSE, 
-            glm::value_ptr(view_matrix)) );
+        // Set the projection matrix and the view matrix.
+        this->cuboid_shader->set_uniform_mat4fv("u_projection_matrix", this->projection_matrix);
+        this->cuboid_shader->set_uniform_mat4fv("u_view_matrix", view_matrix);
     }
     // Visualize the simulation space.
     if (this->draw_simulation_space == true) {
-        GLCall( glUniform4fv(glGetUniformLocation(
-            this->cuboid_shader->program_id, "u_color"), 1, 
-            glm::value_ptr(this->color_simulation_space)) );
+        this->cuboid_shader->set_uniform_4fv("u_color", this->color_simulation_space);
         this->simulation_space->draw();
     }
     // Visualize the starting positions of the fluid.
     if (this->draw_fluid_starting_positions == true) {
         for (int i = 0; i < this->fluid_start_positions->size(); i++) {
-            GLCall( glUniform4fv(glGetUniformLocation(
-                this->cuboid_shader->program_id, "u_color"), 1, 
-                glm::value_ptr(this->color_fluid_starting_positions)) );
+            this->cuboid_shader->set_uniform_4fv("u_color", this->color_fluid_starting_positions);
             this->fluid_start_positions->at(i).draw();
         }
     }
@@ -140,22 +133,14 @@ void Visualization_Handler::visualize ()
     GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
     // Activate the desired shader program.
     this->fluid_shaders[this->current_fluid_shader].use_program();
-    // Set the projection matrix.
-    GLCall( glUniformMatrix4fv(glGetUniformLocation(
-        this->fluid_shaders[this->current_fluid_shader].program_id, "u_projection_matrix"), 1, GL_FALSE, 
-        glm::value_ptr(this->projection_matrix)) );
-    // Set the viewmatrix.
-    glm::mat4 view_matrix = camera.get_view_matrix();
-    GLCall( glUniformMatrix4fv(glGetUniformLocation(
-        this->fluid_shaders[this->current_fluid_shader].program_id, "u_view_matrix"), 1, GL_FALSE, 
-        glm::value_ptr(view_matrix)) );
+    // Set the projection matrix and the view matrix.
+    this->fluid_shaders[this->current_fluid_shader].set_uniform_mat4fv("u_projection_matrix", this->projection_matrix);
+    this->fluid_shaders[this->current_fluid_shader].set_uniform_mat4fv("u_view_matrix", view_matrix);
     // Set the aspect ratio.
-    GLCall( glUniform1f(glGetUniformLocation(
-            this->fluid_shaders[this->current_fluid_shader].program_id, "aspectRatio"), 
-            this->aspect_ratio) );
-
+    this->fluid_shaders[this->current_fluid_shader].set_uniform_1f("u_aspect_ratio", this->aspect_ratio);
     // Draw the particles.
     this->particle_system->draw();
+
     // Unbind.
     GLCall( glBindVertexArray(0) );
     // Swap front and back buffers.

@@ -1,5 +1,7 @@
 #include "shader.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -135,4 +137,55 @@ std::string Shader::get_code_from_file (const char* filepath)
         str_shader_code = "";
     }
     return str_shader_code;
+}
+
+int Shader::get_uniform_location (const std::string& name)
+{
+    // Was the location already cached?
+    if (this->uniform_location_cache.find(name) != this->uniform_location_cache.end())
+        return this->uniform_location_cache[name];
+
+    // If not, find the location, save it to the cache and then return it.
+    GLCall( int location = glGetUniformLocation(this->program_id, name.c_str()) );
+    if (location == -1) {
+        // An error occured.
+        std::cout << "ERROR: The uniform with the name '" << name << "' was not found." << std::endl;
+    }
+    this->uniform_location_cache[name] = location;
+    return location;
+}
+
+void Shader::set_uniform_1i (const std::string& name, int value)
+{
+    GLCall( glUniform1i(this->get_uniform_location(name), value) );
+}
+
+void Shader::set_uniform_1f (const std::string& name, float value)
+{
+    GLCall( glUniform1f(this->get_uniform_location(name), value) );
+}
+
+void Shader::set_uniform_3f (const std::string& name, float f0, float f1, float f2)
+{
+    GLCall( glUniform3f(this->get_uniform_location(name), f0, f1, f2) );
+}
+
+void Shader::set_uniform_3fv (const std::string& name, const glm::vec3& vector)
+{
+    GLCall( glUniform3fv(this->get_uniform_location(name), 1, glm::value_ptr(vector)) );
+}
+
+void Shader::set_uniform_4f (const std::string& name, float f0, float f1, float f2, float f3)
+{
+    GLCall( glUniform4f(this->get_uniform_location(name), f0, f1, f2, f3) );
+}
+
+void Shader::set_uniform_4fv (const std::string& name, const glm::vec4& vector)
+{
+    GLCall( glUniform4fv(this->get_uniform_location(name), 1, glm::value_ptr(vector)) );
+}
+
+void Shader::set_uniform_mat4fv (const std::string& name, const glm::mat4& matrix)
+{
+    GLCall( glUniformMatrix4fv(this->get_uniform_location(name), 1, GL_FALSE, glm::value_ptr(matrix)) );
 }
