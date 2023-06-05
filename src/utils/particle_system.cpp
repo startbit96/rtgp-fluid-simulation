@@ -193,10 +193,22 @@ inline float Particle_System::kernel_w_viscosity_laplacian (glm::vec3 distance_v
     return coefficient * (SPH_KERNEL_RADIUS - distance);
 }
 
+void Particle_System::calculate_density ()
+{
+    for (int i = 0; i < this->number_of_particles; i++) {
+        this->particles[i].density = 0;
+        for (int idx_neighbor = 0; idx_neighbor < this->neighbor_list[i].size(); idx_neighbor++) {
+            this->particles[i].density += SPH_PARTICLE_MASS * 
+                this->kernel_w_poly6(this->neighbor_list[i][idx_neighbor].position - this->particles[i].position);
+        }
+    }
+}
+
 void Particle_System::simulate ()
 {
     this->calculate_spatial_grid();
     this->find_neighbors();
+    this->calculate_density();
 }
 
 void Particle_System::draw (bool unbind)

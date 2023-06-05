@@ -26,7 +26,8 @@
 #define HASH_FUNCTION_PRIME_NUMBER_2            19349663
 #define HASH_FUNCTION_PRIME_NUMBER_3            83492791
 // SPH related defines.
-#define SPH_KERNEL_RADIUS                       0.02f
+#define SPH_KERNEL_RADIUS                       0.01f
+#define SPH_PARTICLE_MASS                       28.0f
 
 // Particle System.
 class Particle_System 
@@ -67,6 +68,9 @@ class Particle_System
         float kernel_w_poly6_laplacian (glm::vec3 distance_vector);
         glm::vec3 kernel_w_spiky_gradient (glm::vec3 distance_vector);
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
+
+        // Force calculation.
+        void calculate_density ();
 
     public:
         std::vector<Particle> particles;

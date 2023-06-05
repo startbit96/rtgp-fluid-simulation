@@ -12,7 +12,10 @@ Particle get_default_particle(float x, float y, float z)
 void describe_particle_memory_layout ()
 {
     // Describe the vertex buffer layout.
+    // Position
     GLCall( glEnableVertexAttribArray(0) );
-    // Position.
-    GLCall( glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0) );
+    GLCall( glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (GLvoid*)0) );
+    // Density.
+    GLCall( glEnableVertexAttribArray(1) );
+    GLCall( glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Particle), (GLvoid*)(offsetof(Particle, density))) );
 }
