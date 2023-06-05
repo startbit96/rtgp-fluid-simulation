@@ -46,10 +46,8 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     }
     GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_particles, &this->particle_indices[0], GL_STATIC_DRAW) );
 
-    // Describe the vertex buffer layout.
-    GLCall( glEnableVertexAttribArray(0) );
-    // Position.
-    GLCall( glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (GLvoid*)0) );
+    // Describe the vertex buffer layout of a particle.
+    describe_particle_memory_layout();
 
     // Unbind.
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );

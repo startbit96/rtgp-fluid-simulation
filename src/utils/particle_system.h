@@ -13,6 +13,9 @@
 // be modified during runtime. Define here the min and max distance and
 // also the factor. Make sure that the values for init, min and max are 
 // within the power series of the inc factor.
+// Also note that if the factor is 2 that does not mean the number of 
+// particles doubles but since we are in 3D it is 2^3 = 8 times the 
+// number of particles.
 #define PARTICLE_INITIAL_DISTANCE_INIT          0.064f
 #define PARTICLE_INITIAL_DISTANCE_MIN           0.008f
 #define PARTICLE_INITIAL_DISTANCE_MAX           0.128f
