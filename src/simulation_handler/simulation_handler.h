@@ -13,6 +13,7 @@ class Simulation_Handler
         void calculate_initial_particle_positions ();
 
     public:
+        bool is_running;
         int current_scene_id;
         int next_scene_id;
         std::vector<Scene_Information> available_scenes;
@@ -28,6 +29,11 @@ class Simulation_Handler
         void delete_all_scenes ();
         bool load_scene ();
         void print_scene_information ();
+
+        // Simulation handling.
+        void toggle_pause_resume_simulation ();
+        void simulate ();
+
 
         // Some functions that return pointers to the cuboids and other 
         // informations needed for rendering by the visualization handler.

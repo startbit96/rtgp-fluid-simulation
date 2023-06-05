@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <string>
+#include <unordered_map>
 
 #include "particle.h"
 #include "cuboid.h"
@@ -20,6 +21,12 @@
 #define PARTICLE_INITIAL_DISTANCE_MIN           0.008f
 #define PARTICLE_INITIAL_DISTANCE_MAX           0.128f
 #define PARTICLE_INITIAL_DISTANCE_INC_FACTOR    2
+// Our hash function requires three big prime numbers. Define them here.
+#define HASH_FUNCTION_PRIME_NUMBER_1            73856093
+#define HASH_FUNCTION_PRIME_NUMBER_2            19349663
+#define HASH_FUNCTION_PRIME_NUMBER_3            83492791
+// SPH related defines.
+#define SPH_KERNEL_RADIUS                       0.02f
 
 // Particle System.
 class Particle_System 
@@ -30,6 +37,24 @@ class Particle_System
         GLuint index_buffer_object;
         std::vector<unsigned int> particle_indices;
         float particle_initial_distance;
+
+        // Within SPH, the new values of a particle are calculated using the values
+        // of the particles nearby. For the speed of this application it is necessary to 
+        // have a good datastructure. For each particle we will create a list of neighbouring 
+        // particles that are within the reach of the used kernel. To create these lists we will
+        // use a spatial hash grid.
+        glm::vec3 hash_offset;
+        int number_of_cells;
+        std::unordered_multimap<int, Particle> spatial_hash_grid;
+        std::vector<std::vector<Particle>> neighbor_list;
+
+        int discretize_value (float value);
+        int hash (glm::vec3 position);
+        void calculate_spatial_grid ();
+        void find_neighbors ();
+
+        // For the SPH we use different kernels, their gradient and laplacian.
+
 
     public:
         std::vector<Particle> particles;
@@ -47,6 +72,7 @@ class Particle_System
         // to be filled an the particle_initial_distance.
         // It also generates the OpenGL needed buffers like the vertex array object.
         void generate_initial_particles (std::vector<Cuboid>& cuboids);
+        void initialize_spatial_grid (Cuboid simulation_space);
         // Note that these functions do not call the generate_initial_particles function, this
         // has to be done by the application. It simply increases / decreases the distance between
         // initial particles so that with the next call of generate_initial_particles it will take effect.
@@ -55,7 +81,8 @@ class Particle_System
         bool increase_number_of_particles ();
         bool decrease_number_of_particles ();
 
-        //void resolve_collision (float x_min, float x_max, float y_min, float y_max, float z_min, float z_max);
+        // Simulation related functions.
+        void simulate ();
 
         // Draws the particles. Note that the shader will be selected and activated by the visualization handler.
         void draw (bool unbind = false);

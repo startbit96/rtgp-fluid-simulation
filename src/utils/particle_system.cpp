@@ -1,5 +1,7 @@
 #include "particle_system.h"
 
+#include <math.h>
+
 #include "debug.h"
 #include "helper.h"
 
@@ -9,6 +11,7 @@ Particle_System::Particle_System ()
     this->number_of_particles = 0;
     this->number_of_particles_as_string = to_string_with_separator(this->number_of_particles);
     this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
+    this->number_of_cells = 0;
 }
 
 void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
@@ -54,6 +57,16 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     GLCall( glBindVertexArray(0) );
 }
 
+void Particle_System::initialize_spatial_grid (Cuboid simulation_space)
+{
+    // Calculate number of cells and offset for the hash formula.
+    int number_of_cells_x = ceil((simulation_space.x_max - simulation_space.x_min) / SPH_KERNEL_RADIUS);
+    int number_of_cells_y = ceil((simulation_space.y_max - simulation_space.y_min) / SPH_KERNEL_RADIUS);
+    int number_of_cells_z = ceil((simulation_space.z_max - simulation_space.z_min) / SPH_KERNEL_RADIUS);
+    this->number_of_cells = number_of_cells_x * number_of_cells_y * number_of_cells_z;
+    this->hash_offset = glm::vec3(simulation_space.x_min, simulation_space.y_min, simulation_space.z_min);
+}
+
 bool Particle_System::increase_number_of_particles ()
 {
     // Note that if we want to increase the number of particles, we need to decrease the initial distance of the particles.
@@ -82,6 +95,70 @@ bool Particle_System::decrease_number_of_particles ()
         this->particle_initial_distance = new_particle_initial_distance;
         return true;
     }
+}
+
+inline int Particle_System::discretize_value (float value)
+{
+    return (int)floor(value / SPH_KERNEL_RADIUS);
+}
+
+inline int Particle_System::hash (glm::vec3 position)
+{
+    // Do we have to move the position to positive values? Just do it for now and maybe 
+    // delete it later.
+    // Link to the paper for the hash function:
+    // Optimized Spatial Hashing for Collision Detection of Deformable Objects
+    // https://matthias-research.github.io/pages/publications/tetraederCollision.pdf
+    position = position + this->hash_offset;
+    return (
+        (Particle_System::discretize_value(position.x) * HASH_FUNCTION_PRIME_NUMBER_1) ^
+        (Particle_System::discretize_value(position.y) * HASH_FUNCTION_PRIME_NUMBER_2) ^
+        (Particle_System::discretize_value(position.z) * HASH_FUNCTION_PRIME_NUMBER_3)
+    ) % this->number_of_cells;
+}
+
+void Particle_System::calculate_spatial_grid ()
+{
+    // Clear it first.
+    this->spatial_hash_grid.clear();
+    // Now insert every particle based on its position.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        this->spatial_hash_grid.insert(std::make_pair(
+            Particle_System::hash(this->particles[i].position), 
+            this->particles[i]
+        ));
+    }
+}
+
+void Particle_System::find_neighbors ()
+{
+    // Clear the vector of neighbor lists and announce the size of the vector.
+    this->neighbor_list.clear();
+    this->neighbor_list.resize(this->number_of_particles);
+    for (int i = 0; i < this->number_of_particles; i++) {
+        // Look for all particles into the neighbouring 26 cells.
+        for (int look_x = -1; look_x <= 1; look_x++) {
+            for (int look_y = -1; look_y <= 1; look_y++) {
+                for (int look_z = -1; look_z <= 1; look_z++) {
+                    glm::vec3 look_position = this->particles[i].position + glm::vec3(look_x, look_y, look_z) * SPH_KERNEL_RADIUS;
+                    int look_key = this->hash(look_position);
+                    auto range = this->spatial_hash_grid.equal_range(look_key);
+                    for (auto it = range.first; it != range.second; ++it) {
+                        // If the distance to this particle is less than the kernel radius, we need this one.
+                        if (glm::distance(this->particles[i].position, it->second.position) < SPH_KERNEL_RADIUS) {
+                            this->neighbor_list[i].push_back(it->second);
+                        }
+                    }
+                }
+            }
+        }
+    } 
+}
+
+void Particle_System::simulate ()
+{
+    this->calculate_spatial_grid();
+    this->find_neighbors();
 }
 
 void Particle_System::draw (bool unbind)

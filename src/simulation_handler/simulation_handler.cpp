@@ -8,6 +8,7 @@
 
 Simulation_Handler::Simulation_Handler()
 {
+    this->is_running = true;
     this->current_scene_id = -1;
     this->next_scene_id = -1;
 }
@@ -52,6 +53,7 @@ bool Simulation_Handler::load_scene ()
     }
     this->current_scene_id = this->next_scene_id;
     this->particle_system.generate_initial_particles(this->available_scenes[current_scene_id].fluid_starting_positions);
+    this->particle_system.initialize_spatial_grid(this->available_scenes[current_scene_id].simulation_space);
     return true;
 }
 
@@ -63,6 +65,18 @@ void Simulation_Handler::print_scene_information ()
         this->available_scenes[i].print_information();
     }
     std::cout << std::endl;
+}
+
+void Simulation_Handler::toggle_pause_resume_simulation ()
+{
+    this->is_running = !this->is_running;
+}
+
+void Simulation_Handler::simulate ()
+{
+    if (this->is_running == true) {
+        this->particle_system.simulate();
+    }
 }
 
 Cuboid* Simulation_Handler::get_pointer_to_simulation_space ()

@@ -149,7 +149,7 @@ void rtgp_application()
                 break;
             case SIMULATION_RUNNING:
                 // Calculate the next simulation step.
-                // ...
+                application_handler.simulation_handler.simulate();
                 // Update the visualization.
                 application_handler.visualization_handler.visualize();
                 break;
@@ -187,7 +187,7 @@ void switch_scene (int scene_id)
 
 void pause_resume_simulation ()
 {
-
+    application_handler.simulation_handler.toggle_pause_resume_simulation();
 }
 
 void increase_number_of_particles ()
