@@ -29,7 +29,7 @@
 #define SPH_KERNEL_RADIUS                       0.25f
 #define SPH_PARTICLE_MASS                       0.02f
 #define SPH_REST_DENSITY                        998.29f
-#define SPH_GAS_CONSTANT                        0.3f
+#define SPH_GAS_CONSTANT                        0.05f
 #define SPH_VISCOSITY                           0.00089f
 #define SPH_SURFACE_TENSION                     0.0728f
 #define SPH_SURFACE_THRESHOLD                   7.065f
@@ -56,6 +56,7 @@ class Particle_System
         // use a spatial hash grid.
         glm::vec3 hash_offset;
         int number_of_cells;
+        float sph_kernel_radius;
         std::unordered_multimap<int, Particle> spatial_hash_grid;
         std::vector<std::vector<Particle>> neighbor_list;
         int discretize_value (float value);

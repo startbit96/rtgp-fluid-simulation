@@ -49,6 +49,7 @@ void rtgp_application()
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_1, [] () { switch_scene(0); }, "LOAD SCENE 1"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_2, [] () { switch_scene(1); }, "LOAD SCENE 2"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_3, [] () { switch_scene(2); }, "LOAD SCENE 3"));
+                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_4, [] () { switch_scene(3); }, "LOAD SCENE 4"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_R, reload_scene, "RELOAD SCENE"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES"));
@@ -92,6 +93,14 @@ void rtgp_application()
                     std::vector<Cuboid> {
                         Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f),
                         Cuboid(0.5f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f)
+                    }
+                );
+                application_handler.simulation_handler.register_new_scene(
+                    "Drop fall scenario.",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-1.0f, 1.0f, -1.0f, -0.6f, -1.0f, 1.0f),
+                        Cuboid(-0.2f, 0.2f, 0.5f, 0.9f, -0.2f, 0.2f)
                     }
                 );
                 // Announce the first scene (id = 0) as the next scene to be loaded.

@@ -11,6 +11,7 @@ Particle_System::Particle_System ()
     this->number_of_particles = 0;
     this->number_of_particles_as_string = to_string_with_separator(this->number_of_particles);
     this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
+    this->sph_kernel_radius = 2 * this->particle_initial_distance;
     this->number_of_cells = 0;
 }
 
@@ -80,6 +81,7 @@ bool Particle_System::increase_number_of_particles ()
     else {
         // Increasement of number of particles can be done.
         this->particle_initial_distance = new_particle_initial_distance;
+        this->sph_kernel_radius = 2 * this->particle_initial_distance;
         return true;
     }
 }
@@ -95,13 +97,14 @@ bool Particle_System::decrease_number_of_particles ()
     else {
         // Decreasement of number of particles can be done.
         this->particle_initial_distance = new_particle_initial_distance;
+        this->sph_kernel_radius = 2 * this->particle_initial_distance;
         return true;
     }
 }
 
 inline int Particle_System::discretize_value (float value)
 {
-    return (int)floor(value / SPH_KERNEL_RADIUS);
+    return (int)floor(value / this->sph_kernel_radius);
 }
 
 inline int Particle_System::hash (glm::vec3 position)
@@ -121,34 +124,34 @@ inline int Particle_System::hash (glm::vec3 position)
 
 inline float Particle_System::kernel_w_poly6 (glm::vec3 distance_vector)
 {
-    static float coefficient = 315.0f / (64.0f * M_PI * pow(SPH_KERNEL_RADIUS, 9));
-    static float kernel_radius_squared = pow(SPH_KERNEL_RADIUS, 2);
+    float coefficient = 315.0f / (64.0f * M_PI * pow(this->sph_kernel_radius, 9));
+    float kernel_radius_squared = pow(this->sph_kernel_radius, 2);
     float distance_squared = glm::dot(distance_vector, distance_vector);
     return coefficient * (float)pow(kernel_radius_squared - distance_squared, 3);
 }
 
 inline glm::vec3 Particle_System::kernel_w_poly6_gradient (glm::vec3 distance_vector)
 {
-    static float coefficient = -945.0f / (32.0f * M_PI * pow(SPH_KERNEL_RADIUS, 9));
-    static float kernel_radius_squared = pow(SPH_KERNEL_RADIUS, 2);
+    float coefficient = -945.0f / (32.0f * M_PI * pow(this->sph_kernel_radius, 9));
+    float kernel_radius_squared = pow(this->sph_kernel_radius, 2);
     float distance_squared = glm::dot(distance_vector, distance_vector);
     return (coefficient * (float)pow(kernel_radius_squared - distance_squared, 2)) * distance_vector;
 }
 
 inline float Particle_System::kernel_w_poly6_laplacian (glm::vec3 distance_vector)
 {
-    static float coefficient = -945.0f / (32.0f * M_PI * pow(SPH_KERNEL_RADIUS, 9));
-    static float kernel_radius_squared = pow(SPH_KERNEL_RADIUS, 2);
+    float coefficient = -945.0f / (32.0f * M_PI * pow(this->sph_kernel_radius, 9));
+    float kernel_radius_squared = pow(this->sph_kernel_radius, 2);
     float distance_squared = glm::dot(distance_vector, distance_vector);
     return coefficient * (kernel_radius_squared - distance_squared) * (3.0f * kernel_radius_squared - 7.0f * distance_squared);
 }
 
 inline glm::vec3 Particle_System::kernel_w_spiky_gradient (glm::vec3 distance_vector)
 {
-    static float coefficient = -45.0f / (M_PI * pow(SPH_KERNEL_RADIUS, 6));
+    float coefficient = -45.0f / (M_PI * pow(this->sph_kernel_radius, 6));
     float distance = glm::length(distance_vector);
     if (distance > 0.0f) {
-        return coefficient * (float)pow(SPH_KERNEL_RADIUS - distance, 2) * (distance_vector / distance);
+        return coefficient * (float)pow(this->sph_kernel_radius - distance, 2) * (distance_vector / distance);
     }
     else {
         return glm::vec3(0.0f);
@@ -157,9 +160,9 @@ inline glm::vec3 Particle_System::kernel_w_spiky_gradient (glm::vec3 distance_ve
 
 inline float Particle_System::kernel_w_viscosity_laplacian (glm::vec3 distance_vector)
 {
-    static float coefficient = 45.0f / (M_PI * pow(SPH_KERNEL_RADIUS, 6));
+    float coefficient = 45.0f / (M_PI * pow(this->sph_kernel_radius, 6));
     float distance = glm::length(distance_vector);
-    return coefficient * (SPH_KERNEL_RADIUS - distance);
+    return coefficient * (this->sph_kernel_radius - distance);
 }
 
 void Particle_System::simulate ()
@@ -189,12 +192,12 @@ void Particle_System::simulate ()
         for (int look_x = -1; look_x <= 1; look_x++) {
             for (int look_y = -1; look_y <= 1; look_y++) {
                 for (int look_z = -1; look_z <= 1; look_z++) {
-                    glm::vec3 look_position = this->particles[i].position + glm::vec3(look_x, look_y, look_z) * SPH_KERNEL_RADIUS;
+                    glm::vec3 look_position = this->particles[i].position + glm::vec3(look_x, look_y, look_z) * this->sph_kernel_radius;
                     int look_key = this->hash(look_position);
                     auto range = this->spatial_hash_grid.equal_range(look_key);
                     for (auto it = range.first; it != range.second; ++it) {
                         // If the distance to this particle is less than the kernel radius, we need this one.
-                        if (glm::distance(this->particles[i].position, it->second.position) < SPH_KERNEL_RADIUS) {
+                        if (glm::distance(this->particles[i].position, it->second.position) < this->sph_kernel_radius) {
                             this->neighbor_list[i].push_back(it->second);
                         }
                     }
