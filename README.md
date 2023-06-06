@@ -13,6 +13,7 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 - save termination of the program if the shaders could no be loaded
 - add keys for scene switch depending on number of registered scenes
 - do we need to make the values for the hash function positive?
+- add the units for the sph related defines
 
 ## Dependencies
 
