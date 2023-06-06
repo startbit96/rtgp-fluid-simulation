@@ -29,14 +29,54 @@
 #define SPH_KERNEL_RADIUS                       0.25f
 #define SPH_PARTICLE_MASS                       0.02f
 #define SPH_REST_DENSITY                        998.29f
-#define SPH_GAS_CONSTANT                        0.05f
+#define SPH_GAS_CONSTANT                        0.2f
 #define SPH_VISCOSITY                           0.00089f
 #define SPH_SURFACE_TENSION                     0.0728f
 #define SPH_SURFACE_THRESHOLD                   7.065f
+// Gravity mode defines.
+#define SPH_GRAVITY_MAGNITUDE                   9.8f
+#define GRAVITY_MODE_ROT_SWITCH_TIME            50
 // Collision handling.
 #define SPH_COLLISION_DAMPING                   0.25f
 // Simulation time defines.
 #define SPH_SIMULATION_TIME_STEP                0.05f
+
+
+// Gravity modes for different gravity vectors.
+enum Gravity_Mode
+{
+    GRAVITY_OFF,
+    GRAVITY_NORMAL,
+    GRAVITY_ROT_90,
+    GRAVITY_WAVE
+};
+
+inline const char* to_string (Gravity_Mode gravity_mode)
+{
+    switch (gravity_mode) {
+        case GRAVITY_OFF:       return "GRAVITY OFF";
+        case GRAVITY_NORMAL:    return "GRAVITY NORMAL (-Y)";
+        case GRAVITY_ROT_90:    return "GRAVITY SWITCH BETWEEN X and Y";
+        case GRAVITY_WAVE:      return "GRAVITY WAVE";
+        default:                return "unknown gravity mode";
+    }
+}
+
+// What calculation mode to use?
+enum Computation_Mode
+{
+    COMPUTATION_MODE_BRUTE_FORCE,
+    COMPUTATION_MODE_SPATIAL_HASH_GRID
+};
+
+inline const char* to_string (Computation_Mode computation_mode)
+{
+    switch (computation_mode) {
+        case COMPUTATION_MODE_BRUTE_FORCE:          return "BRUTE FORCE";
+        case COMPUTATION_MODE_SPATIAL_HASH_GRID:    return "SPATIAL HASH GRID";
+        default:                                    return "unknown computation mode";
+    }
+}
 
 // Particle System.
 class Particle_System 
@@ -48,6 +88,8 @@ class Particle_System
         std::vector<unsigned int> particle_indices;
         float particle_initial_distance;
         Cuboid* simulation_space;
+        unsigned int simulation_step;
+        Gravity_Mode gravity_mode;
 
         // Within SPH, the new values of a particle are calculated using the values
         // of the particles nearby. For the speed of this application it is necessary to 
@@ -76,7 +118,10 @@ class Particle_System
         float kernel_w_poly6_laplacian (glm::vec3 distance_vector);
         glm::vec3 kernel_w_spiky_gradient (glm::vec3 distance_vector);
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
+        glm::vec3 get_gravity_vector ();
         Particle resolve_collision (Particle particle);
+        void simulate_spatial_hash_grid_old ();
+        void simulate_brute_force ();
 
     public:
         std::vector<Particle> particles;
@@ -103,9 +148,17 @@ class Particle_System
         bool increase_number_of_particles ();
         bool decrease_number_of_particles ();
 
+        // Change the gravity mode. 
+        void next_gravity_mode ();
+        void change_gravity_mode (Gravity_Mode gravity_mode);
+
+        // Change the computation mode (either brute force or with spatial hash grid).
+        Computation_Mode computation_mode;
+        void next_computation_mode ();
+        void change_computation_mode (Computation_Mode computation_mode);
+
         // Simulation related functions.
-        void simulate_spatial_hash_grid_old ();
-        void simulate_brute_force ();
+        void simulate ();
 
         // Draws the particles. Note that the shader will be selected and activated by the visualization handler.
         void draw (bool unbind = false);

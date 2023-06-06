@@ -54,6 +54,8 @@ void rtgp_application()
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_DOWN, decrease_number_of_particles, "DECREASE NUMBER OF PARTICLES"));
+                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_G, change_gravity_mode, "CHANGE GRAVITY MODE"));
+                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_C, change_computation_mode, "CHANGE COMPUTATION MODE"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_S, toggle_simulation_space_visualization, "SHOW / HIDE SIMULATION SPACE"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_D, toggle_fluid_starting_positions_visualization, "SHOW / HIDE FLUID STARTING POSITIONS"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_D, change_fluid_visualization, "CHANGE FLUID VISUALIZATION MODE"));
@@ -221,6 +223,16 @@ void decrease_number_of_particles ()
     else {
         std::cout << "The number of particles cannot be decreased further." << std::endl;
     }
+}
+
+void change_gravity_mode ()
+{
+    application_handler.simulation_handler.particle_system.next_gravity_mode();
+}
+
+void change_computation_mode ()
+{
+    application_handler.simulation_handler.particle_system.next_computation_mode();
 }
 
 void exit_application () 

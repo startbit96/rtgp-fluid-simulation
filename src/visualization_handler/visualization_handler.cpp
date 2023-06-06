@@ -96,7 +96,8 @@ void Visualization_Handler::visualize ()
         std::stringstream window_title;
         window_title << WINDOW_DEFAULT_NAME << "  [ " 
             << this->particle_system->number_of_particles_as_string << " particles  |  "
-            << fps << " FPS ]";
+            << fps << " FPS  |  Computation Mode: "
+            << to_string(this->particle_system->computation_mode) << " ]";
         glfwSetWindowTitle(this->window, window_title.str().c_str());
         this->last_time_stamp_fps = current_time_stamp;
         this->frame_counter = 0;

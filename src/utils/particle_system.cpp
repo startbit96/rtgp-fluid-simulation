@@ -13,6 +13,8 @@ Particle_System::Particle_System ()
     this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
     this->sph_kernel_radius = 2 * this->particle_initial_distance;
     this->number_of_cells = 0;
+    this->gravity_mode = GRAVITY_NORMAL;
+    this->computation_mode = COMPUTATION_MODE_BRUTE_FORCE;
 }
 
 void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
@@ -56,6 +58,9 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     // Unbind.
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
     GLCall( glBindVertexArray(0) );
+
+    // Reset the simulation time.
+    this->simulation_step = 0;
 }
 
 void Particle_System::set_simulation_space (Cuboid* simulation_space)
@@ -163,6 +168,66 @@ inline float Particle_System::kernel_w_viscosity_laplacian (glm::vec3 distance_v
     float coefficient = 45.0f / (M_PI * pow(this->sph_kernel_radius, 6));
     float distance = glm::length(distance_vector);
     return coefficient * (this->sph_kernel_radius - distance);
+}
+
+glm::vec3 Particle_System::get_gravity_vector ()
+{
+    if (this->gravity_mode == GRAVITY_OFF) {
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+    }
+    else if (this->gravity_mode == GRAVITY_NORMAL) {
+        return glm::vec3(0.0f, -SPH_GRAVITY_MAGNITUDE, 0.0f);
+    }
+    else if (this->gravity_mode == GRAVITY_ROT_90) {
+        if (((this->simulation_step / GRAVITY_MODE_ROT_SWITCH_TIME) % 2) == 0) {
+            return glm::vec3(0.0f, -SPH_GRAVITY_MAGNITUDE, 0.0f);
+        }
+        else {
+            return glm::vec3(-SPH_GRAVITY_MAGNITUDE, 0.0f, 0.0f);
+        }
+    }
+    else if (this->gravity_mode == GRAVITY_WAVE) {
+        return glm::vec3(
+            sin(this->simulation_step * M_PI / 180.0f) * SPH_GRAVITY_MAGNITUDE, 
+            -abs(cos(this->simulation_step * M_PI / 180.0f)) * SPH_GRAVITY_MAGNITUDE, 
+            0.0f);
+    }
+    else {
+        std::cout << "ERROR. Unimplemented gravity mode." << std::endl;
+        return glm::vec3(0.0f, 0.0f, 0.0f);
+    }
+}
+
+void Particle_System::next_gravity_mode ()
+{
+    if (this->gravity_mode == GRAVITY_OFF) { this->change_gravity_mode(GRAVITY_NORMAL); }
+    else if (this->gravity_mode == GRAVITY_NORMAL) { this->change_gravity_mode(GRAVITY_ROT_90); }
+    else if (this->gravity_mode == GRAVITY_ROT_90) { this->change_gravity_mode(GRAVITY_WAVE); }
+    else if (this->gravity_mode == GRAVITY_WAVE) { this->change_gravity_mode(GRAVITY_OFF); }
+    else {
+        std::cout << "ERROR. Unimplemented gravity mode." << std::endl;
+    }
+}
+
+void Particle_System::change_gravity_mode (Gravity_Mode gravity_mode)
+{
+    this->gravity_mode = gravity_mode;
+    std::cout << "Activated gravity mode '" << to_string(this->gravity_mode) << "'." << std::endl;
+}
+
+void Particle_System::next_computation_mode ()
+{
+    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) { this->change_computation_mode(COMPUTATION_MODE_SPATIAL_HASH_GRID); }
+    else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_HASH_GRID) { this->change_computation_mode(COMPUTATION_MODE_BRUTE_FORCE); }
+    else {
+        std::cout << "ERROR. Unimplemented computation mode." << std::endl;
+    }
+}
+
+void Particle_System::change_computation_mode (Computation_Mode computation_mode)
+{
+    this->computation_mode = computation_mode;
+    std::cout << "Activated computation mode '" << to_string(this->computation_mode) << "'." << std::endl;
 }
 
 Particle Particle_System::resolve_collision (Particle particle)
@@ -284,7 +349,7 @@ void Particle_System::simulate_spatial_hash_grid_old ()
         glm::vec3 f_pressure(0.0f);
         glm::vec3 f_viscosity(0.0f);
         glm::vec3 f_surface(0.0f);
-        glm::vec3 f_external(0.0f, -9.8f, 0.0f);
+        glm::vec3 f_external = this->get_gravity_vector();
         glm::vec3 color_field_normal(0.0f);
         float color_field_laplacian = 0.0f;
 
@@ -349,7 +414,7 @@ void Particle_System::simulate_brute_force ()
         glm::vec3 f_pressure(0.0f);
         glm::vec3 f_viscosity(0.0f);
         glm::vec3 f_surface(0.0f);
-        glm::vec3 f_external(0.0f, -9.8f, 0.0f);
+        glm::vec3 f_external = this->get_gravity_vector();
         glm::vec3 color_field_normal(0.0f);
         float color_field_laplacian = 0.0f;
 
@@ -394,6 +459,17 @@ void Particle_System::simulate_brute_force ()
 
         // Resolve collision.
         this->particles[i] = this->resolve_collision(this->particles[i]);
+    }
+}
+
+void Particle_System::simulate ()
+{
+    this->simulation_step++;
+    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) {
+        this->simulate_brute_force();
+    }
+    else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_HASH_GRID) {
+        this->simulate_spatial_hash_grid_old();
     }
 }
 

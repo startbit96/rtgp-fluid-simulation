@@ -75,7 +75,7 @@ void Simulation_Handler::toggle_pause_resume_simulation ()
 void Simulation_Handler::simulate ()
 {
     if (this->is_running == true) {
-        this->particle_system.simulate_brute_force();
+        this->particle_system.simulate();
     }
 }
 
