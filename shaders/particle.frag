@@ -2,6 +2,7 @@
 
 layout(location = 0) out vec4 color;
 
+in vec3 geometry_velocity;
 in vec2 tex_coord;
 uniform float u_aspect_ratio;
 
@@ -22,5 +23,5 @@ void main()
         discard;
 
     // Set the color of the fragment
-    color = vec4(0.1, 0.2, 1.0 - distance_from_center, 1.0);
+    color = vec4(0.1, length(geometry_velocity) * 0.5, 1.0 - distance_from_center, 1.0);
 }

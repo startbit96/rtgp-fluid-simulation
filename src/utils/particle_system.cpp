@@ -333,23 +333,19 @@ void Particle_System::simulate_brute_force ()
 {
     // Calculate for each particle the density and the pressure.
     for (int i = 0; i < this->number_of_particles; i++) {
-        Particle current_particle = this->particles[i];
-        float density = 0;
+        this->particles[i].density = 0;
         for (int j = 0; j < this->number_of_particles; j++) {
-            Particle neighbor = this->particles[j];
-            glm::vec3 distance_vector = current_particle.position - neighbor.position;
+            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
             if (glm::length(distance_vector) < this->sph_kernel_radius) {
-                density += this->kernel_w_poly6(distance_vector);
+                this->particles[i].density += this->kernel_w_poly6(distance_vector);
             }
         }
-        density *= SPH_PARTICLE_MASS;
-        this->particles[i].density = density;
+        this->particles[i].density *= SPH_PARTICLE_MASS;
         this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
     }
     
     // Calculate the forces.
     for (int i = 0; i < this->number_of_particles; i++) {
-        Particle current_particle = this->particles[i];
         glm::vec3 f_pressure(0.0f);
         glm::vec3 f_viscosity(0.0f);
         glm::vec3 f_surface(0.0f);
@@ -360,41 +356,39 @@ void Particle_System::simulate_brute_force ()
         // Calculate the forces based on all particles nearby.
         for (int j = 0; j < this->number_of_particles; j++) {
             if (j == i) continue;
-            Particle neighbor = this->particles[j];
-            glm::vec3 distance_vector = current_particle.position - neighbor.position;
+            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
             if (glm::length(distance_vector) < this->sph_kernel_radius) {
-                f_pressure += (float)(current_particle.pressure / pow(current_particle.density, 2) + 
-                    neighbor.pressure / pow(neighbor.density, 2)) *
+                f_pressure += (float)(this->particles[i].pressure / pow(this->particles[i].density, 2) + 
+                    this->particles[j].pressure / pow(this->particles[j].density, 2)) *
                     this->kernel_w_spiky_gradient(distance_vector);
-                f_viscosity += (neighbor.velocity - current_particle.velocity) * 
+                f_viscosity += (this->particles[j].velocity - this->particles[i].velocity) * 
                     this->kernel_w_viscosity_laplacian(distance_vector) / 
-                    neighbor.density;
+                    this->particles[j].density;
                 color_field_normal += this->kernel_w_poly6_gradient(distance_vector) / 
-                    neighbor.density;
+                    this->particles[j].density;
                 color_field_laplacian += this->kernel_w_poly6_laplacian(distance_vector) / 
-                    neighbor.density;
+                    this->particles[j].density;
             }
         }
-        f_pressure *= -SPH_PARTICLE_MASS * current_particle.density;
+        f_pressure *= -SPH_PARTICLE_MASS * this->particles[i].density;
         f_viscosity *= SPH_PARTICLE_MASS * SPH_VISCOSITY;
         color_field_normal *= SPH_PARTICLE_MASS;
         this->particles[i].normal = -1.0f * color_field_normal;
         color_field_laplacian *= SPH_PARTICLE_MASS;
-        // surface tension force
         float color_field_normal_magnitude = glm::length(color_field_normal);
         if (color_field_normal_magnitude > SPH_SURFACE_THRESHOLD) {
             f_surface = -SPH_SURFACE_TENSION * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
         }
 
         // Calculate the acceleration.
-        glm::vec3 acceleration = (f_pressure + f_viscosity + f_surface + f_external) / current_particle.density;
+        glm::vec3 acceleration = (f_pressure + f_viscosity + f_surface + f_external) / this->particles[i].density;
 
         // Compute the new position and new velocity using the velocity verlet integration.
         static float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
-        glm::vec3 new_position = current_particle.position + 
-            current_particle.velocity * SPH_SIMULATION_TIME_STEP + 
+        glm::vec3 new_position = this->particles[i].position + 
+            this->particles[i].velocity * SPH_SIMULATION_TIME_STEP + 
             acceleration * time_step_squared;
-        glm::vec3 new_velocity = (new_position - current_particle.position) / SPH_SIMULATION_TIME_STEP;
+        glm::vec3 new_velocity = (new_position - this->particles[i].position) / SPH_SIMULATION_TIME_STEP;
         this->particles[i].position = new_position;
         this->particles[i].velocity = new_velocity;
 
