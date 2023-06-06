@@ -165,7 +165,41 @@ inline float Particle_System::kernel_w_viscosity_laplacian (glm::vec3 distance_v
     return coefficient * (this->sph_kernel_radius - distance);
 }
 
-void Particle_System::simulate ()
+Particle Particle_System::resolve_collision (Particle particle)
+{
+    // Resolve collision and if a collision happened, reset the position, inverse the velocities component
+    // and apply a collision damping.
+    // x.
+    if (particle.position.x < this->simulation_space->x_min) {
+        particle.position.x = this->simulation_space->x_min;
+        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING;
+    }
+    else if (particle.position.x > this->simulation_space->x_max) {
+        particle.position.x = this->simulation_space->x_max;
+        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING;
+    }
+    // y.
+    if (particle.position.y < this->simulation_space->y_min) {
+        particle.position.y = this->simulation_space->y_min;
+        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING;
+    }
+    else if (particle.position.y > this->simulation_space->y_max) {
+        particle.position.y = this->simulation_space->y_max;
+        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING;
+    }
+    // z.
+    if (particle.position.z < this->simulation_space->z_min) {
+        particle.position.z = this->simulation_space->z_min;
+        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING;
+    }
+    else if (particle.position.z > this->simulation_space->z_max) {
+        particle.position.z = this->simulation_space->z_max;
+        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING;
+    }
+    return particle;
+}
+
+void Particle_System::simulate_spatial_hash_grid_old ()
 {
     // Calculate the spatial grid. Therefore clear it first.
     this->spatial_hash_grid.clear();
@@ -184,9 +218,45 @@ void Particle_System::simulate ()
     // Mueller et al. suggested to store the neighbouring particles on the grid structure
     // itself rather than as references, so that due to memory locality the hit cache rate 
     // will increase significantly.
-    // The problem is, that if we save them directly there, the density of the particle is
-    // missing since the density is not calculated yet and the stored density is the old one 
-    // from the last iteration.
+    // The problem is, that if we save them directly there, the density and pressure of the 
+    // particle are the old once from the last simulation step since the density is not 
+    // calculated yet.
+    // Therefore can not simply use the created neighbor vectors for the calculation, since these
+    // are based on the grid which contains copies of the particles. These copies have not 
+    // the updated density and pressure value. Therefore first calculate the density and 
+    // pressure values and then iterate again over the grid and create the neighbor vectors.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        // Look for all particles into the neighbouring 26 cells and calculate pressure and density.
+        this->particles[i].density = 0;
+        this->particles[i].density += this->kernel_w_poly6(glm::vec3(0.0f));
+        for (int look_x = -1; look_x <= 1; look_x++) {
+            for (int look_y = -1; look_y <= 1; look_y++) {
+                for (int look_z = -1; look_z <= 1; look_z++) {
+                    glm::vec3 look_position = this->particles[i].position + glm::vec3(look_x, look_y, look_z) * this->sph_kernel_radius;
+                    int look_key = this->hash(look_position);
+                    auto range = this->spatial_hash_grid.equal_range(look_key);
+                    for (auto it = range.first; it != range.second; ++it) {
+                        // If the distance to this particle is less than the kernel radius, we need this one.
+                        if (glm::distance(this->particles[i].position, it->second.position) < this->sph_kernel_radius) {
+                            this->particles[i].density += this->kernel_w_poly6(it->second.position - this->particles[i].position);
+                        }
+                    }
+                }
+            }
+        }
+        this->particles[i].density *= SPH_PARTICLE_MASS;
+        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
+    }
+
+    // Calculate the spatial grid again. This time with the updated density and pressure values.
+    this->spatial_hash_grid.clear();
+    // Now insert every particle based on its position.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        this->spatial_hash_grid.insert(std::make_pair(
+            Particle_System::hash(this->particles[i].position), 
+            this->particles[i]
+        ));
+    }
     for (int i = 0; i < this->number_of_particles; i++) {
         // Look for all particles into the neighbouring 26 cells.
         for (int look_x = -1; look_x <= 1; look_x++) {
@@ -206,25 +276,9 @@ void Particle_System::simulate ()
         }
     } 
 
-    // Calculate for each particle the density, the pressure, ... and the forces.
-    // IMPORTANT NOTE: CHECK IF THE FOLLOWING IS THE CORRECT USAGE OF SPH! 
-    // Currently each particle uses the generated neighbor list for the computation.
-    // Since these lists do not include references to the particles but copies,
-    // the updated density values are not used for this iteration. So the calculated
-    // forces are based on the values of the previous time step. Is this correct?
-    // ANOTHER NOTE: For all neighbor particles we use the old density and the old
-    // pressure but for the current one we use the current density and current pressure.
+    
+    // Calculate the forces.
     for (int i = 0; i < this->number_of_particles; i++) {
-        // Calculate the density.
-        this->particles[i].density = 0;
-        // Self-inclusion.
-        this->particles[i].density += this->kernel_w_poly6(glm::vec3(0.0f));
-        for (int idx_neighbor = 0; idx_neighbor < this->neighbor_list[i].size(); idx_neighbor++) {
-            this->particles[i].density += this->kernel_w_poly6(this->neighbor_list[i][idx_neighbor].position - this->particles[i].position);
-        }
-        this->particles[i].density *= SPH_PARTICLE_MASS;
-        // Calculate the pressure.
-        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
 
         // Calculate the forces.
         glm::vec3 f_pressure(0.0f);
@@ -270,36 +324,82 @@ void Particle_System::simulate ()
         this->particles[i].position = new_position;
         this->particles[i].velocity = new_velocity;
 
+        // Resolve collision.
+        this->particles[i] = this->resolve_collision(this->particles[i]);
+    }
+}
 
-        // Resolve collision and if a collision happened, reset the position, inverse the velocities component
-        // and apply a collision damping.
-        // x.
-        if (this->particles[i].position.x < this->simulation_space->x_min) {
-            this->particles[i].position.x = this->simulation_space->x_min;
-            this->particles[i].velocity.x = -this->particles[i].velocity.x * SPH_COLLISION_DAMPING;
+void Particle_System::simulate_brute_force ()
+{
+    // Calculate for each particle the density and the pressure.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        Particle current_particle = this->particles[i];
+        float density = 0;
+        for (int j = 0; j < this->number_of_particles; j++) {
+            Particle neighbor = this->particles[j];
+            glm::vec3 distance_vector = current_particle.position - neighbor.position;
+            if (glm::length(distance_vector) < this->sph_kernel_radius) {
+                density += this->kernel_w_poly6(distance_vector);
+            }
         }
-        else if (this->particles[i].position.x > this->simulation_space->x_max) {
-            this->particles[i].position.x = this->simulation_space->x_max;
-            this->particles[i].velocity.x = -this->particles[i].velocity.x * SPH_COLLISION_DAMPING;
+        density *= SPH_PARTICLE_MASS;
+        this->particles[i].density = density;
+        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
+    }
+    
+    // Calculate the forces.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        Particle current_particle = this->particles[i];
+        glm::vec3 f_pressure(0.0f);
+        glm::vec3 f_viscosity(0.0f);
+        glm::vec3 f_surface(0.0f);
+        glm::vec3 f_external(0.0f, -9.8f, 0.0f);
+        glm::vec3 color_field_normal(0.0f);
+        float color_field_laplacian = 0.0f;
+
+        // Calculate the forces based on all particles nearby.
+        for (int j = 0; j < this->number_of_particles; j++) {
+            if (j == i) continue;
+            Particle neighbor = this->particles[j];
+            glm::vec3 distance_vector = current_particle.position - neighbor.position;
+            if (glm::length(distance_vector) < this->sph_kernel_radius) {
+                f_pressure += (float)(current_particle.pressure / pow(current_particle.density, 2) + 
+                    neighbor.pressure / pow(neighbor.density, 2)) *
+                    this->kernel_w_spiky_gradient(distance_vector);
+                f_viscosity += (neighbor.velocity - current_particle.velocity) * 
+                    this->kernel_w_viscosity_laplacian(distance_vector) / 
+                    neighbor.density;
+                color_field_normal += this->kernel_w_poly6_gradient(distance_vector) / 
+                    neighbor.density;
+                color_field_laplacian += this->kernel_w_poly6_laplacian(distance_vector) / 
+                    neighbor.density;
+            }
         }
-        // y.
-        if (this->particles[i].position.y < this->simulation_space->y_min) {
-            this->particles[i].position.y = this->simulation_space->y_min;
-            this->particles[i].velocity.y = -this->particles[i].velocity.y * SPH_COLLISION_DAMPING;
+        f_pressure *= -SPH_PARTICLE_MASS * current_particle.density;
+        f_viscosity *= SPH_PARTICLE_MASS * SPH_VISCOSITY;
+        color_field_normal *= SPH_PARTICLE_MASS;
+        this->particles[i].normal = -1.0f * color_field_normal;
+        color_field_laplacian *= SPH_PARTICLE_MASS;
+        // surface tension force
+        float color_field_normal_magnitude = glm::length(color_field_normal);
+        if (color_field_normal_magnitude > SPH_SURFACE_THRESHOLD) {
+            f_surface = -SPH_SURFACE_TENSION * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
         }
-        else if (this->particles[i].position.y > this->simulation_space->y_max) {
-            this->particles[i].position.y = this->simulation_space->y_max;
-            this->particles[i].velocity.y = -this->particles[i].velocity.y * SPH_COLLISION_DAMPING;
-        }
-        // z.
-        if (this->particles[i].position.z < this->simulation_space->z_min) {
-            this->particles[i].position.z = this->simulation_space->z_min;
-            this->particles[i].velocity.z = -this->particles[i].velocity.z * SPH_COLLISION_DAMPING;
-        }
-        else if (this->particles[i].position.z > this->simulation_space->z_max) {
-            this->particles[i].position.z = this->simulation_space->z_max;
-            this->particles[i].velocity.z = -this->particles[i].velocity.z * SPH_COLLISION_DAMPING;
-        }
+
+        // Calculate the acceleration.
+        glm::vec3 acceleration = (f_pressure + f_viscosity + f_surface + f_external) / current_particle.density;
+
+        // Compute the new position and new velocity using the velocity verlet integration.
+        static float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
+        glm::vec3 new_position = current_particle.position + 
+            current_particle.velocity * SPH_SIMULATION_TIME_STEP + 
+            acceleration * time_step_squared;
+        glm::vec3 new_velocity = (new_position - current_particle.position) / SPH_SIMULATION_TIME_STEP;
+        this->particles[i].position = new_position;
+        this->particles[i].velocity = new_velocity;
+
+        // Resolve collision.
+        this->particles[i] = this->resolve_collision(this->particles[i]);
     }
 }
 

@@ -76,6 +76,7 @@ class Particle_System
         float kernel_w_poly6_laplacian (glm::vec3 distance_vector);
         glm::vec3 kernel_w_spiky_gradient (glm::vec3 distance_vector);
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
+        Particle resolve_collision (Particle particle);
 
     public:
         std::vector<Particle> particles;
@@ -103,7 +104,8 @@ class Particle_System
         bool decrease_number_of_particles ();
 
         // Simulation related functions.
-        void simulate ();
+        void simulate_spatial_hash_grid_old ();
+        void simulate_brute_force ();
 
         // Draws the particles. Note that the shader will be selected and activated by the visualization handler.
         void draw (bool unbind = false);
