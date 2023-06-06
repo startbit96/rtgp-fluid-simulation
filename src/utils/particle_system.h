@@ -20,7 +20,7 @@
 #define PARTICLE_INITIAL_DISTANCE_INIT          0.128f
 #define PARTICLE_INITIAL_DISTANCE_MIN           0.008f
 #define PARTICLE_INITIAL_DISTANCE_MAX           0.256f
-#define PARTICLE_INITIAL_DISTANCE_INC_FACTOR    2
+#define PARTICLE_INITIAL_DISTANCE_INC_FACTOR    sqrt(2)
 // Our hash function requires three big prime numbers. Define them here.
 #define HASH_FUNCTION_PRIME_NUMBER_1            73856093
 #define HASH_FUNCTION_PRIME_NUMBER_2            19349663
@@ -29,9 +29,9 @@
 #define SPH_KERNEL_RADIUS                       0.25f
 #define SPH_PARTICLE_MASS                       0.02f
 #define SPH_REST_DENSITY                        998.29f
-#define SPH_GAS_CONSTANT                        0.2f
+#define SPH_GAS_CONSTANT                        0.1f
 #define SPH_VISCOSITY                           0.00089f
-#define SPH_SURFACE_TENSION                     0.0728f
+#define SPH_SURFACE_TENSION                     1.0728f
 #define SPH_SURFACE_THRESHOLD                   7.065f
 // Gravity mode defines.
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
@@ -40,6 +40,8 @@
 #define SPH_COLLISION_DAMPING                   0.25f
 // Simulation time defines.
 #define SPH_SIMULATION_TIME_STEP                0.05f
+// Multithreading defines.
+#define SIMULATION_NUMBER_OF_THREADS            8
 
 
 // Gravity modes for different gravity vectors.
@@ -66,6 +68,7 @@ inline const char* to_string (Gravity_Mode gravity_mode)
 enum Computation_Mode
 {
     COMPUTATION_MODE_BRUTE_FORCE,
+    COMPUTATION_MODE_BRUTE_FORCE_PARALLEL,
     COMPUTATION_MODE_SPATIAL_HASH_GRID
 };
 
@@ -73,6 +76,7 @@ inline const char* to_string (Computation_Mode computation_mode)
 {
     switch (computation_mode) {
         case COMPUTATION_MODE_BRUTE_FORCE:          return "BRUTE FORCE";
+        case COMPUTATION_MODE_BRUTE_FORCE_PARALLEL: return "BRUTE FORCE WITH PARALLEL FOR LOOP";
         case COMPUTATION_MODE_SPATIAL_HASH_GRID:    return "SPATIAL HASH GRID";
         default:                                    return "unknown computation mode";
     }
@@ -120,6 +124,7 @@ class Particle_System
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
         glm::vec3 get_gravity_vector ();
         Particle resolve_collision (Particle particle);
+        void calculate_positions (unsigned int index_start, unsigned int index_end);
         void simulate_spatial_hash_grid_old ();
         void simulate_brute_force ();
 

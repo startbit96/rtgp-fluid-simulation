@@ -1,6 +1,7 @@
 #include "particle_system.h"
 
 #include <math.h>
+#include <thread>
 
 #include "debug.h"
 #include "helper.h"
@@ -217,7 +218,8 @@ void Particle_System::change_gravity_mode (Gravity_Mode gravity_mode)
 
 void Particle_System::next_computation_mode ()
 {
-    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) { this->change_computation_mode(COMPUTATION_MODE_SPATIAL_HASH_GRID); }
+    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) { this->change_computation_mode(COMPUTATION_MODE_BRUTE_FORCE_PARALLEL); }
+    else if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_PARALLEL) { this->change_computation_mode(COMPUTATION_MODE_SPATIAL_HASH_GRID); }
     else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_HASH_GRID) { this->change_computation_mode(COMPUTATION_MODE_BRUTE_FORCE); }
     else {
         std::cout << "ERROR. Unimplemented computation mode." << std::endl;
@@ -394,23 +396,10 @@ void Particle_System::simulate_spatial_hash_grid_old ()
     }
 }
 
-void Particle_System::simulate_brute_force ()
+void Particle_System::calculate_positions (unsigned int index_start, unsigned int index_end)
 {
-    // Calculate for each particle the density and the pressure.
-    for (int i = 0; i < this->number_of_particles; i++) {
-        this->particles[i].density = 0;
-        for (int j = 0; j < this->number_of_particles; j++) {
-            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
-            if (glm::length(distance_vector) < this->sph_kernel_radius) {
-                this->particles[i].density += this->kernel_w_poly6(distance_vector);
-            }
-        }
-        this->particles[i].density *= SPH_PARTICLE_MASS;
-        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
-    }
-    
-    // Calculate the forces.
-    for (int i = 0; i < this->number_of_particles; i++) {
+    // Calculate the forces for each particle independently.
+    for (int i = index_start; i <= index_end; i++) {
         glm::vec3 f_pressure(0.0f);
         glm::vec3 f_viscosity(0.0f);
         glm::vec3 f_surface(0.0f);
@@ -462,10 +451,49 @@ void Particle_System::simulate_brute_force ()
     }
 }
 
+void Particle_System::simulate_brute_force ()
+{
+    // Calculate for each particle the density and the pressure.
+    for (int i = 0; i < this->number_of_particles; i++) {
+        this->particles[i].density = 0;
+        for (int j = 0; j < this->number_of_particles; j++) {
+            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
+            if (glm::length(distance_vector) < this->sph_kernel_radius) {
+                this->particles[i].density += this->kernel_w_poly6(distance_vector);
+            }
+        }
+        this->particles[i].density *= SPH_PARTICLE_MASS;
+        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
+    }
+    
+    // Calculate the forces for each particle independently.
+    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) {
+        this->calculate_positions(0, this->number_of_particles - 1);
+    }
+    else if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_PARALLEL) {
+        int chunk_size = this->number_of_particles / SIMULATION_NUMBER_OF_THREADS;
+        std::vector<std::thread> threads;
+        threads.reserve(SIMULATION_NUMBER_OF_THREADS);
+        // Create threads.
+        for (int i = 0; i < SIMULATION_NUMBER_OF_THREADS; i++) {
+            int chunk_start = i * chunk_size;
+            int chunk_end = chunk_start + chunk_size - 1;
+            if (i == SIMULATION_NUMBER_OF_THREADS - 1) {
+                chunk_end = this->number_of_particles - 1;
+            }
+            threads.emplace_back(&Particle_System::calculate_positions, this, chunk_start, chunk_end);
+        }
+        // Wait for the threads to finish.
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    }
+}
+
 void Particle_System::simulate ()
 {
     this->simulation_step++;
-    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) {
+    if ((this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) || (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_PARALLEL)) {
         this->simulate_brute_force();
     }
     else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_HASH_GRID) {
