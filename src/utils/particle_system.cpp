@@ -396,7 +396,47 @@ void Particle_System::simulate_spatial_hash_grid_old ()
     }
 }
 
-void Particle_System::calculate_positions (unsigned int index_start, unsigned int index_end)
+void Particle_System::parallel_for (void (Particle_System::* function)(unsigned int, unsigned int))
+{
+    // Create threads and execute the desired function in chunks.
+    int chunk_size = this->number_of_particles / SIMULATION_NUMBER_OF_THREADS;
+    std::vector<std::thread> threads;
+    threads.reserve(SIMULATION_NUMBER_OF_THREADS);
+    // Create the threads.
+    for (int i = 0; i < SIMULATION_NUMBER_OF_THREADS; i++) {
+        int chunk_start = i * chunk_size;
+        int chunk_end = chunk_start + chunk_size - 1;
+        // The last chunk goes until the end of the vector.
+        if (i == SIMULATION_NUMBER_OF_THREADS - 1) {
+            chunk_end = this->number_of_particles - 1;
+        }
+        // With the following call we not only append the thread to the vector but with 
+        // creating the thread it also starts.
+        threads.emplace_back(function, this, chunk_start, chunk_end);
+    }
+    // Wait for the threads to finish.
+    for (auto& thread : threads) {
+        thread.join();
+    }
+}
+
+void Particle_System::calculate_density_pressure_brute_force (unsigned int index_start, unsigned int index_end)
+{
+    // Calculate the density and the pressure using the SPH method.
+    for (int i = index_start; i <= index_end; i++) {
+        this->particles[i].density = 0;
+        for (int j = 0; j < this->number_of_particles; j++) {
+            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
+            if (glm::length(distance_vector) < this->sph_kernel_radius) {
+                this->particles[i].density += this->kernel_w_poly6(distance_vector);
+            }
+        }
+        this->particles[i].density *= SPH_PARTICLE_MASS;
+        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
+    }
+}
+
+void Particle_System::calculate_acceleration_brute_force (unsigned int index_start, unsigned int index_end)
 {
     // Calculate the forces for each particle independently.
     for (int i = index_start; i <= index_end; i++) {
@@ -435,13 +475,18 @@ void Particle_System::calculate_positions (unsigned int index_start, unsigned in
         }
 
         // Calculate the acceleration.
-        glm::vec3 acceleration = (f_pressure + f_viscosity + f_surface + f_external) / this->particles[i].density;
+        this->particles[i].acceleration = (f_pressure + f_viscosity + f_surface + f_external) / this->particles[i].density;
+    }
+}
 
-        // Compute the new position and new velocity using the velocity verlet integration.
+void Particle_System::calculate_verlet_step_brute_force (unsigned int index_start, unsigned int index_end)
+{
+    // Compute the new position and new velocity using the velocity verlet integration.
+    for (int i = index_start; i <= index_end; i++) {
         static float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
         glm::vec3 new_position = this->particles[i].position + 
             this->particles[i].velocity * SPH_SIMULATION_TIME_STEP + 
-            acceleration * time_step_squared;
+            this->particles[i].acceleration * time_step_squared;
         glm::vec3 new_velocity = (new_position - this->particles[i].position) / SPH_SIMULATION_TIME_STEP;
         this->particles[i].position = new_position;
         this->particles[i].velocity = new_velocity;
@@ -453,40 +498,25 @@ void Particle_System::calculate_positions (unsigned int index_start, unsigned in
 
 void Particle_System::simulate_brute_force ()
 {
-    // Calculate for each particle the density and the pressure.
-    for (int i = 0; i < this->number_of_particles; i++) {
-        this->particles[i].density = 0;
-        for (int j = 0; j < this->number_of_particles; j++) {
-            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
-            if (glm::length(distance_vector) < this->sph_kernel_radius) {
-                this->particles[i].density += this->kernel_w_poly6(distance_vector);
-            }
-        }
-        this->particles[i].density *= SPH_PARTICLE_MASS;
-        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
-    }
-    
-    // Calculate the forces for each particle independently.
+    // Do it either in sequential mode or in parallel.
     if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) {
-        this->calculate_positions(0, this->number_of_particles - 1);
+        // Calculate the density and the pressure for each particle.
+        this->calculate_density_pressure_brute_force(0, this->number_of_particles - 1);
+        // Calculate the forces and acceleration.
+        this->calculate_acceleration_brute_force(0, this->number_of_particles - 1);
+        // Calculate the new positions and apply collision handling.
+        this->calculate_verlet_step_brute_force(0, this->number_of_particles - 1);
     }
     else if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_PARALLEL) {
-        int chunk_size = this->number_of_particles / SIMULATION_NUMBER_OF_THREADS;
-        std::vector<std::thread> threads;
-        threads.reserve(SIMULATION_NUMBER_OF_THREADS);
-        // Create threads.
-        for (int i = 0; i < SIMULATION_NUMBER_OF_THREADS; i++) {
-            int chunk_start = i * chunk_size;
-            int chunk_end = chunk_start + chunk_size - 1;
-            if (i == SIMULATION_NUMBER_OF_THREADS - 1) {
-                chunk_end = this->number_of_particles - 1;
-            }
-            threads.emplace_back(&Particle_System::calculate_positions, this, chunk_start, chunk_end);
-        }
-        // Wait for the threads to finish.
-        for (auto& thread : threads) {
-            thread.join();
-        }
+        // Calculate the density and the pressure for each particle using multiple threads.
+        this->parallel_for(&Particle_System::calculate_density_pressure_brute_force);
+        // Calculate the forces and acceleration using multiple threads.
+        this->parallel_for(&Particle_System::calculate_acceleration_brute_force);
+        // Calculate the new positions and apply collision handling using multiple threads.
+        this->parallel_for(&Particle_System::calculate_verlet_step_brute_force);
+    }
+    else {
+        std::cout << "ERROR: Unsupported computation_mode in simulate_brute_force detected." << std::endl;
     }
 }
 

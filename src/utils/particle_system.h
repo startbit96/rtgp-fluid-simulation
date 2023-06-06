@@ -122,11 +122,19 @@ class Particle_System
         float kernel_w_poly6_laplacian (glm::vec3 distance_vector);
         glm::vec3 kernel_w_spiky_gradient (glm::vec3 distance_vector);
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
+        // Returns the gravity vector based on the selected gravity mode.
         glm::vec3 get_gravity_vector ();
+        // Collision handling.
         Particle resolve_collision (Particle particle);
-        void calculate_positions (unsigned int index_start, unsigned int index_end);
-        void simulate_spatial_hash_grid_old ();
+        // Brute force implementation (used also for the multithreading variant).
+        void parallel_for (void (Particle_System::* function)(unsigned int, unsigned int));
+        // Note for the following functions: index_end is included in the for loop.
+        void calculate_density_pressure_brute_force (unsigned int index_start, unsigned int index_end);
+        void calculate_acceleration_brute_force (unsigned int index_start, unsigned int index_end);
+        void calculate_verlet_step_brute_force (unsigned int index_start, unsigned int index_end);
         void simulate_brute_force ();
+        // Implementation using a spatial hash grid.
+        void simulate_spatial_hash_grid_old ();
 
     public:
         std::vector<Particle> particles;
@@ -145,6 +153,7 @@ class Particle_System
         // It also generates the OpenGL needed buffers like the vertex array object.
         void generate_initial_particles (std::vector<Cuboid>& cuboids);
         void set_simulation_space (Cuboid* simulation_space);
+
         // Note that these functions do not call the generate_initial_particles function, this
         // has to be done by the application. It simply increases / decreases the distance between
         // initial particles so that with the next call of generate_initial_particles it will take effect.
@@ -162,7 +171,8 @@ class Particle_System
         void next_computation_mode ();
         void change_computation_mode (Computation_Mode computation_mode);
 
-        // Simulation related functions.
+        // Simulate the next step. What computation mode is internally used is determined by the 
+        // setted computation mode.
         void simulate ();
 
         // Draws the particles. Note that the shader will be selected and activated by the visualization handler.
