@@ -80,6 +80,18 @@ bool Cuboid::contains (Cuboid &other)
     );
 }
 
+bool Cuboid::contains (glm::vec3 position)
+{
+    return (
+        (position.x >= this->x_min) &&
+        (position.x <= this->x_max) &&
+        (position.y >= this->y_min) &&
+        (position.y <= this->y_max) &&
+        (position.z >= this->z_min) &&
+        (position.z <= this->z_max)
+    );
+}
+
 float Cuboid::get_volume ()
 {
     float edge_length_x = this->x_max - this->x_min;

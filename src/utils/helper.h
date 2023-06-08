@@ -17,3 +17,10 @@ std::string to_string_with_separator(unsigned int value, char thousand_sep = ','
     }
     return result;
 }
+
+std::string to_string (glm::vec3 vector)
+{
+    return "x: " + std::to_string(vector.x) + 
+        ", y: "  + std::to_string(vector.y) + 
+        ", z: "  + std::to_string(vector.z);
+}

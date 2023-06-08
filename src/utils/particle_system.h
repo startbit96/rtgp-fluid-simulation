@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <string>
-#include <unordered_map>
+#include <mutex>
 
 #include "particle.h"
 #include "cuboid.h"
@@ -29,13 +29,13 @@
 #define SPH_KERNEL_RADIUS                       0.25f
 #define SPH_PARTICLE_MASS                       0.02f
 #define SPH_REST_DENSITY                        998.29f
-#define SPH_GAS_CONSTANT                        0.1f
-#define SPH_VISCOSITY                           0.00089f
-#define SPH_SURFACE_TENSION                     1.0728f
+#define SPH_GAS_CONSTANT                        0.05f
+#define SPH_VISCOSITY                           0.6f
+#define SPH_SURFACE_TENSION                     0.0028f
 #define SPH_SURFACE_THRESHOLD                   7.065f
 // Gravity mode defines.
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
-#define GRAVITY_MODE_ROT_SWITCH_TIME            50
+#define GRAVITY_MODE_ROT_SWITCH_TIME            200
 // Collision handling.
 #define SPH_COLLISION_DAMPING                   0.25f
 // Simulation time defines.
@@ -68,17 +68,19 @@ inline const char* to_string (Gravity_Mode gravity_mode)
 enum Computation_Mode
 {
     COMPUTATION_MODE_BRUTE_FORCE,
-    COMPUTATION_MODE_BRUTE_FORCE_PARALLEL,
-    COMPUTATION_MODE_SPATIAL_HASH_GRID
+    COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING,
+    COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE,
+    COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE
 };
 
 inline const char* to_string (Computation_Mode computation_mode)
 {
     switch (computation_mode) {
-        case COMPUTATION_MODE_BRUTE_FORCE:          return "BRUTE FORCE";
-        case COMPUTATION_MODE_BRUTE_FORCE_PARALLEL: return "BRUTE FORCE WITH PARALLEL FOR LOOP";
-        case COMPUTATION_MODE_SPATIAL_HASH_GRID:    return "SPATIAL HASH GRID";
-        default:                                    return "unknown computation mode";
+        case COMPUTATION_MODE_BRUTE_FORCE:                  return "BRUTE FORCE";
+        case COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING:   return "BRUTE FORCE WITH MUTLITHREADING";
+        case COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE:      return "SPATIAL GRID (CLEAR AND CREATE NEW GRID)";
+        case COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE:     return "SPATIAL GRID (UPDATE GRID)";
+        default:                                            return "unknown computation mode";
     }
 }
 
@@ -86,55 +88,67 @@ inline const char* to_string (Computation_Mode computation_mode)
 class Particle_System 
 {
     private:
+        // Render related.
         GLuint vertex_array_object;
         GLuint vertex_buffer_object;
         GLuint index_buffer_object;
         std::vector<unsigned int> particle_indices;
+
+        // Settings.
         float particle_initial_distance;
-        Cuboid* simulation_space;
-        unsigned int simulation_step;
-        Gravity_Mode gravity_mode;
-
-        // Within SPH, the new values of a particle are calculated using the values
-        // of the particles nearby. For the speed of this application it is necessary to 
-        // have a good datastructure. For each particle we will create a list of neighbouring 
-        // particles that are within the reach of the used kernel. To create these lists we will
-        // use a spatial hash grid.
-        glm::vec3 hash_offset;
-        int number_of_cells;
         float sph_kernel_radius;
-        std::unordered_multimap<int, Particle> spatial_hash_grid;
-        std::vector<std::vector<Particle>> neighbor_list;
-        int discretize_value (float value);
-        int hash (glm::vec3 position);
+        unsigned int simulation_step;
+        Cuboid* simulation_space;
 
-        // For the SPH we use different kernels, their gradient and laplacian.
-        // Note that normally the function returns 0 if the distance between the particles
-        // is greater than the kernels radius. Therefore we normally would need an if statement
-        // in every kernel function. But since we already do this within the find_neighbors function
-        // we do not need this here and can save some execution time.
-        // ATTENTION: if changes are made to the find_neighbors function, then we may need 
-        // the if statement here!
-        // Make sure to use some static variables for the coefficients and also to not square a 
-        // vector length since this can be faster calculated using the dot product.
+        float calculate_kernel_radius ();
+
+        // Kernels for the SPH method.
         float kernel_w_poly6 (glm::vec3 distance_vector);
         glm::vec3 kernel_w_poly6_gradient (glm::vec3 distance_vector);
         float kernel_w_poly6_laplacian (glm::vec3 distance_vector);
         glm::vec3 kernel_w_spiky_gradient (glm::vec3 distance_vector);
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
+
         // Returns the gravity vector based on the selected gravity mode.
+        Gravity_Mode gravity_mode;
         glm::vec3 get_gravity_vector ();
+
         // Collision handling.
-        Particle resolve_collision (Particle particle);
+        void resolve_collision (Particle& particle);
+
+        // Multithreading.
+        void parallel_for (void (Particle_System::* function)(unsigned int, unsigned int), int number_of_elements);
+
         // Brute force implementation (used also for the multithreading variant).
-        void parallel_for (void (Particle_System::* function)(unsigned int, unsigned int));
         // Note for the following functions: index_end is included in the for loop.
         void calculate_density_pressure_brute_force (unsigned int index_start, unsigned int index_end);
         void calculate_acceleration_brute_force (unsigned int index_start, unsigned int index_end);
         void calculate_verlet_step_brute_force (unsigned int index_start, unsigned int index_end);
         void simulate_brute_force ();
-        // Implementation using a spatial hash grid.
-        void simulate_spatial_hash_grid_old ();
+
+        // Implementation using a spatial grid.
+        glm::vec3 particle_offset;
+        int number_of_cells;
+        int number_of_cells_x;
+        int number_of_cells_y;
+        int number_of_cells_z;
+        void calculate_number_of_grid_cells ();
+        std::vector<std::vector<Particle>> spatial_grid;
+        std::vector<std::vector<Particle>> particles_to_be_moved;
+        std::vector<std::unique_ptr<std::mutex>> mutex_spatial_grid;
+        std::vector<std::unique_ptr<std::mutex>> mutex_to_be_moved;
+        int discretize_value (float value);
+        int get_grid_key (glm::vec3 position);
+        bool grid_contains_point (glm::vec3 position);
+        std::vector<int> get_neighbor_cells_indices (glm::vec3 position); 
+        void generate_spatial_grid (unsigned int index_start, unsigned int index_end);
+        void calculate_density_pressure_spatial_grid (unsigned int index_start, unsigned int index_end);
+        void calculate_acceleration_spatial_grid (unsigned int index_start, unsigned int index_end);
+        void calculate_verlet_step_spatial_grid (unsigned int index_start, unsigned int index_end);
+        void get_updated_cell_index (unsigned int index_start, unsigned int index_end);
+        void apply_updated_cell_index (unsigned int index_start, unsigned int index_end);
+        void update_particle_vector ();
+        void simulate_spatial_grid ();
 
     public:
         std::vector<Particle> particles;

@@ -50,6 +50,7 @@ void rtgp_application()
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_2, [] () { switch_scene(1); }, "LOAD SCENE 2"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_3, [] () { switch_scene(2); }, "LOAD SCENE 3"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_4, [] () { switch_scene(3); }, "LOAD SCENE 4"));
+                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_4, [] () { switch_scene(4); }, "LOAD SCENE 5"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_R, reload_scene, "RELOAD SCENE"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES"));
@@ -78,6 +79,13 @@ void rtgp_application()
                 application_handler.simulation_handler.register_new_scene(
                     "Cube in the middle.",
                     Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f)
+                    }
+                );
+                application_handler.simulation_handler.register_new_scene(
+                    "Cube in the middle (big simulation space).",
+                    Cuboid(-3.0f, 3.0f, -1.0f, 1.0f, -1.0f, 1.0f),
                     std::vector<Cuboid> {
                         Cuboid(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f)
                     }

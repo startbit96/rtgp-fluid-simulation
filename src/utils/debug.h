@@ -3,10 +3,13 @@
 #include <GL/glew.h>
 
 #include <iostream>
+#include <string>
 #include <stdint.h>
 #include <assert.h>
 
 #define DEBUG true
+
+// ====================================== OPENGL RELATED DEBUG ======================================
 
 // This helps finding errors in the code. If a called function returns false, 
 // this raises an error. With this we also get the exact line in the code.

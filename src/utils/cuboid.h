@@ -33,6 +33,7 @@ class Cuboid
         // We need this to validate the registered scenes (make sure all fluid starting positions
         // are within the simulation space).
         bool contains (Cuboid &other);
+        bool contains (glm::vec3 position);
         float get_volume ();
         // The implemented camera type is a arc ball camera. We need to specify a point of interest,
         // where the camera is always looking at. To react to different simulation spaces we set 
