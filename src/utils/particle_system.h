@@ -31,8 +31,8 @@
 #define SPH_REST_DENSITY                        998.29f
 #define SPH_GAS_CONSTANT                        0.05f
 #define SPH_VISCOSITY                           0.6f
-#define SPH_SURFACE_TENSION                     0.0028f
-#define SPH_SURFACE_THRESHOLD                   7.065f
+#define SPH_SURFACE_TENSION                     50.0028f
+#define SPH_SURFACE_THRESHOLD                   20.065f
 // Gravity mode defines.
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
@@ -100,9 +100,21 @@ class Particle_System
         unsigned int simulation_step;
         Cuboid* simulation_space;
 
-        float calculate_kernel_radius ();
+        // Calculates the kernels radius based on the initial distance of the particles.
+        void calculate_kernel_radius ();
 
         // Kernels for the SPH method.
+        // Some helper variables so that we do not have to calculate the coefficients
+        // and some other variables everytime for each particle.
+        // The here saved coefficients only depend on the kernels radius, so everytime
+        // the kernel radius changes, the coefficients have to be recalculated.
+        float kernel_radius_squared;
+        float coefficient_kernel_w_poly6;
+        float coefficient_kernel_w_poly6_gradient;
+        float coefficient_kernel_w_poly6_laplacian;
+        float coefficient_kernel_w_spiky_gradient;
+        float coefficient_kernel_w_viscosity_laplacian;
+        // Kernel functions.
         float kernel_w_poly6 (glm::vec3 distance_vector);
         glm::vec3 kernel_w_poly6_gradient (glm::vec3 distance_vector);
         float kernel_w_poly6_laplacian (glm::vec3 distance_vector);

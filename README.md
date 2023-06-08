@@ -7,19 +7,17 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 - change the C++ types to OpenGL Types (where OpenGL is used)
 - add enough comments
 - delete shaders at the end
-- input handler for zooming
 - is there a way to make the relative paths more robust?
 - everything private that can be private?
 - save termination of the program if the shaders could no be loaded
 - add keys for scene switch depending on number of registered scenes
-- do we need to make the values for the hash function positive?
 - add the units for the sph related defines
 
 ## Dependencies
 
 * Graphics Library Framework GLFW Version 3 (glfw3)  
 * OpenGL Extension Wrangler Library (GLEW)  
-* OpenGL Mathematics (GLM)  
+* OpenGL Mathematics (GLM)
 
 Install the dependencies by following the installation instructions on the respective websites (listed below) or by using vcpkg or your package-manager (e.g. homebrew or APT).
 
@@ -34,6 +32,9 @@ Click [here](https://glew.sourceforge.net/) for more informations.
 ### OpenGL Mathematics (GLM)
 OpenGL Mathematics (GLM) is a header only C++ mathematics library for graphics software based on the OpenGL Shading Language (GLSL) specifications.  
 Click [here](https://github.com/g-truc/glm) for more informations.
+
+### Further notes.
+This project uses [Dear ImGui](https://github.com/ocornut/imgui).
 
 
 ## Installation
@@ -58,7 +59,8 @@ If an error occurs while installing the application, make sure, that you have in
 
 ## Usage
 
-Run the application with `./rtgp_fluid_simulation` within the build directory.
+Run the application with `./build/rtgp_fluid_simulation` within the repositories directory.  
+Note that because of relative paths for loading the shaders, you cannot run the program from within the build directory.
 
 ### Command Line Arguments
 

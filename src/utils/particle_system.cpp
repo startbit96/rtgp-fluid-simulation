@@ -13,7 +13,7 @@ Particle_System::Particle_System ()
     this->number_of_particles = 0;
     this->number_of_particles_as_string = to_string_with_separator(this->number_of_particles);
     this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
-    this->sph_kernel_radius = this->calculate_kernel_radius();
+    this->calculate_kernel_radius();
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE;
@@ -70,9 +70,17 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     this->spatial_grid.clear();
 }
 
-inline float Particle_System::calculate_kernel_radius ()
+void Particle_System::calculate_kernel_radius ()
 {
-    return sqrt(2) * this->particle_initial_distance;
+    this->sph_kernel_radius = (2) * this->particle_initial_distance;
+    // The kernels radius changed, so recalculate the coefficients and other 
+    // helper variables for the kernel functions.
+    this->kernel_radius_squared = pow(this->sph_kernel_radius, 2);;
+    this->coefficient_kernel_w_poly6 = 315.0f / (64.0f * M_PI * pow(this->sph_kernel_radius, 9));;
+    this->coefficient_kernel_w_poly6_gradient = -945.0f / (32.0f * M_PI * pow(this->sph_kernel_radius, 9));
+    this->coefficient_kernel_w_poly6_laplacian = 945.0f / (8.0f * M_PI * pow(this->sph_kernel_radius, 9));
+    this->coefficient_kernel_w_spiky_gradient = -45.0f / (M_PI * pow(this->sph_kernel_radius, 6));
+    this->coefficient_kernel_w_viscosity_laplacian = 45.0f / (M_PI * pow(this->sph_kernel_radius, 6));
 }
 
 void Particle_System::set_simulation_space (Cuboid* simulation_space)
@@ -104,7 +112,7 @@ bool Particle_System::increase_number_of_particles ()
     else {
         // Increasement of number of particles can be done.
         this->particle_initial_distance = new_particle_initial_distance;
-        this->sph_kernel_radius = this->calculate_kernel_radius();
+        this->calculate_kernel_radius();
         this->calculate_number_of_grid_cells();
         return true;
     }
@@ -121,7 +129,7 @@ bool Particle_System::decrease_number_of_particles ()
     else {
         // Decreasement of number of particles can be done.
         this->particle_initial_distance = new_particle_initial_distance;
-        this->sph_kernel_radius = this->calculate_kernel_radius();
+        this->calculate_kernel_radius();
         this->calculate_number_of_grid_cells();
         return true;
     }
@@ -132,34 +140,30 @@ bool Particle_System::decrease_number_of_particles ()
 
 inline float Particle_System::kernel_w_poly6 (glm::vec3 distance_vector)
 {
-    float coefficient = 315.0f / (64.0f * M_PI * pow(this->sph_kernel_radius, 9));
-    float kernel_radius_squared = pow(this->sph_kernel_radius, 2);
     float distance_squared = glm::dot(distance_vector, distance_vector);
-    return coefficient * (float)pow(kernel_radius_squared - distance_squared, 3);
+    return this->coefficient_kernel_w_poly6 * (float)pow(this->kernel_radius_squared - distance_squared, 3);
 }
 
 inline glm::vec3 Particle_System::kernel_w_poly6_gradient (glm::vec3 distance_vector)
 {
-    float coefficient = -945.0f / (32.0f * M_PI * pow(this->sph_kernel_radius, 9));
-    float kernel_radius_squared = pow(this->sph_kernel_radius, 2);
     float distance_squared = glm::dot(distance_vector, distance_vector);
-    return (coefficient * (float)pow(kernel_radius_squared - distance_squared, 2)) * distance_vector;
+    return (this->coefficient_kernel_w_poly6_gradient * 
+        (float)pow(this->kernel_radius_squared - distance_squared, 2)) * distance_vector;
 }
 
 inline float Particle_System::kernel_w_poly6_laplacian (glm::vec3 distance_vector)
 {
-    float coefficient = -945.0f / (32.0f * M_PI * pow(this->sph_kernel_radius, 9));
-    float kernel_radius_squared = pow(this->sph_kernel_radius, 2);
     float distance_squared = glm::dot(distance_vector, distance_vector);
-    return coefficient * (kernel_radius_squared - distance_squared) * (3.0f * kernel_radius_squared - 7.0f * distance_squared);
+    return this->coefficient_kernel_w_poly6_laplacian * (this->kernel_radius_squared - distance_squared) * 
+        (distance_squared - 0.75f * (this->kernel_radius_squared - distance_squared));
 }
 
 inline glm::vec3 Particle_System::kernel_w_spiky_gradient (glm::vec3 distance_vector)
 {
-    float coefficient = -45.0f / (M_PI * pow(this->sph_kernel_radius, 6));
     float distance = glm::length(distance_vector);
     if (distance > 0.0f) {
-        return coefficient * (float)pow(this->sph_kernel_radius - distance, 2) * (distance_vector / distance);
+        return this->coefficient_kernel_w_spiky_gradient * (float)pow(this->sph_kernel_radius - distance, 2) * 
+            (distance_vector / distance);
     }
     else {
         return glm::vec3(0.0f);
@@ -168,9 +172,8 @@ inline glm::vec3 Particle_System::kernel_w_spiky_gradient (glm::vec3 distance_ve
 
 inline float Particle_System::kernel_w_viscosity_laplacian (glm::vec3 distance_vector)
 {
-    float coefficient = 45.0f / (M_PI * pow(this->sph_kernel_radius, 6));
     float distance = glm::length(distance_vector);
-    return coefficient * (this->sph_kernel_radius - distance);
+    return this->coefficient_kernel_w_viscosity_laplacian * (this->sph_kernel_radius - distance);
 }
 
 
@@ -674,7 +677,6 @@ void Particle_System::simulate_spatial_grid ()
     else {
         std::cout << "ERROR: Unsupported computation_mode in simulate_spatial_grid detected." << std::endl;
     }
-
 }
 
 
