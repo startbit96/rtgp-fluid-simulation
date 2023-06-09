@@ -25,14 +25,38 @@
 #define HASH_FUNCTION_PRIME_NUMBER_1            73856093
 #define HASH_FUNCTION_PRIME_NUMBER_2            19349663
 #define HASH_FUNCTION_PRIME_NUMBER_3            83492791
-// SPH related defines.
-#define SPH_KERNEL_RADIUS                       0.25f
+// SPH related defines. Define here the initial values for the simulation.
+// Define here also the min, max values and the step size for the imgui sliders.
+// Particles mass in kg.
 #define SPH_PARTICLE_MASS                       0.02f
-#define SPH_REST_DENSITY                        998.29f
-#define SPH_GAS_CONSTANT                        0.05f
-#define SPH_VISCOSITY                           0.6f
-#define SPH_SURFACE_TENSION                     50.0028f
-#define SPH_SURFACE_THRESHOLD                   20.065f
+#define SPH_PARTICLE_MASS_MIN                   0.005f
+#define SPH_PARTICLE_MASS_MAX                   0.1f
+#define SPH_PARTICLE_MASS_STEP                  0.005f
+// Rest density of the fluid in kg/m^3.
+#define SPH_REST_DENSITY                        998.5f
+#define SPH_REST_DENSITY_MIN                    900.00f
+#define SPH_REST_DENSITY_MAX                    1100.00f
+#define SPH_REST_DENSITY_STEP                   0.5f
+// Gas constant in J /(kg * K) on Nm / kg.
+#define SPH_GAS_CONSTANT                        0.0000001f
+#define SPH_GAS_CONSTANT_MIN                    0.000001f
+#define SPH_GAS_CONSTANT_MAX                    0.00001f
+#define SPH_GAS_CONSTANT_STEP                   0.0000001f
+// Viscosity in N s / m^2 or Pa * s.
+#define SPH_VISCOSITY                           0.0001f
+#define SPH_VISCOSITY_MIN                       0.0001f
+#define SPH_VISCOSITY_MAX                       10.0f
+#define SPH_VISCOSITY_STEP                      0.5f
+// Surface tension in N / m.
+#define SPH_SURFACE_TENSION                     30.0f
+#define SPH_SURFACE_TENSION_MIN                 0.005f
+#define SPH_SURFACE_TENSION_MAX                 50.0f
+#define SPH_SURFACE_TENSION_STEP                0.5f
+// Surface tension threshold.
+#define SPH_SURFACE_THRESHOLD                   20.00f
+#define SPH_SURFACE_THRESHOLD_MIN               0.005f
+#define SPH_SURFACE_THRESHOLD_MAX               50.0f
+#define SPH_SURFACE_THRESHOLD_STEP              0.5f
 // Gravity mode defines.
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
@@ -188,6 +212,15 @@ class Particle_System
         // possible and if the call to generate_initial_particles makes sense or not.
         bool increase_number_of_particles ();
         bool decrease_number_of_particles ();
+
+        // Simulation fluid settings. The values are public in order to allow imgui to change them.
+        float sph_particle_mass;
+        float sph_rest_density;
+        float sph_gas_constant;
+        float sph_viscosity;
+        float sph_surface_tension;
+        float sph_surface_threshold;
+        void reset_fluid_attributes ();
 
         // Change the gravity mode. 
         Gravity_Mode gravity_mode;

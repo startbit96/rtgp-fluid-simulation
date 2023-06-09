@@ -81,29 +81,40 @@ void Visualization_Handler::show_imgui_window ()
             ImGui::Checkbox("Show simulation space", &this->draw_simulation_space);
             ImGui::Checkbox("Show initial fluid position", &this->draw_fluid_starting_positions);
         }
-        // Simulation settings.
+        // Fluid attributes.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Simulation settings")) {
-            // Select the computation mode.
-            ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-            if (ImGui::TreeNode("Computation mode"))
-            {
-                for (int i = 0; i < static_cast<int>(Computation_Mode::_COMPUTATION_MODE_COUNT); i++) {
-                    if (ImGui::Selectable(to_string(static_cast<Computation_Mode>(i)), i == this->particle_system->computation_mode)) {
-                        this->particle_system->change_computation_mode(static_cast<Computation_Mode>(i));
-                    }
-                }
-                ImGui::TreePop();
+        if (ImGui::CollapsingHeader("Fluid attributes")) {
+            ImGui::DragFloat("particle mass", &this->particle_system->sph_particle_mass, 
+                SPH_PARTICLE_MASS_STEP, SPH_PARTICLE_MASS_MIN, SPH_PARTICLE_MASS_MAX, "%.6f");
+            ImGui::DragFloat("rest density", &this->particle_system->sph_rest_density, 
+                SPH_REST_DENSITY_STEP, SPH_REST_DENSITY_MIN, SPH_REST_DENSITY_MAX, "%.6f");
+            ImGui::DragFloat("gas constant", &this->particle_system->sph_gas_constant, 
+                SPH_GAS_CONSTANT_STEP, SPH_GAS_CONSTANT_MIN, SPH_GAS_CONSTANT_MAX, "%.6f");
+            ImGui::DragFloat("viscosity", &this->particle_system->sph_viscosity, 
+                SPH_VISCOSITY_STEP, SPH_VISCOSITY_MIN, SPH_VISCOSITY_MAX, "%.6f");
+            ImGui::DragFloat("surface tension", &this->particle_system->sph_surface_tension, 
+                SPH_SURFACE_TENSION_STEP, SPH_SURFACE_TENSION_MIN, SPH_SURFACE_TENSION_MAX, "%.6f");
+            ImGui::DragFloat("surface threshold", &this->particle_system->sph_surface_threshold, 
+                SPH_SURFACE_TENSION_STEP, SPH_SURFACE_TENSION_MIN, SPH_SURFACE_TENSION_MAX, "%.6f");
+            if (ImGui::Button("Reset fluid attributes")) {
+                this->particle_system->reset_fluid_attributes();
             }
-            // Select the gravity mode.
-            ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-            if (ImGui::TreeNode("Gravity mode"))
-            {
-                for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
-                    if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
-                        this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
+        }
+        // Select the computation mode.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Computation mode")) {
+            for (int i = 0; i < static_cast<int>(Computation_Mode::_COMPUTATION_MODE_COUNT); i++) {
+                if (ImGui::Selectable(to_string(static_cast<Computation_Mode>(i)), i == this->particle_system->computation_mode)) {
+                    this->particle_system->change_computation_mode(static_cast<Computation_Mode>(i));
                 }
-                ImGui::TreePop();
+            }
+        }
+        // Select the gravity mode.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Gravity mode")) {
+            for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
+                if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
+                    this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
             }
         }
         ImGui::End();

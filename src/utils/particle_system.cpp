@@ -14,6 +14,7 @@ Particle_System::Particle_System ()
     this->number_of_particles_as_string = to_string_with_separator(this->number_of_particles);
     this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
     this->calculate_kernel_radius();
+    this->reset_fluid_attributes();
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE;
@@ -96,6 +97,16 @@ void Particle_System::set_simulation_space (Cuboid* simulation_space)
         -simulation_space->z_min);
     // Calculate number of cells.
     this->calculate_number_of_grid_cells();
+}
+
+void Particle_System::reset_fluid_attributes ()
+{
+    this->sph_particle_mass = SPH_PARTICLE_MASS;
+    this->sph_rest_density = SPH_REST_DENSITY;
+    this->sph_gas_constant = SPH_GAS_CONSTANT;
+    this->sph_viscosity = SPH_VISCOSITY;
+    this->sph_surface_tension = SPH_SURFACE_TENSION;
+    this->sph_surface_threshold = SPH_SURFACE_THRESHOLD;
 }
 
 
@@ -301,8 +312,8 @@ void Particle_System::calculate_density_pressure_brute_force (unsigned int index
                 this->particles[i].density += this->kernel_w_poly6(distance_vector);
             }
         }
-        this->particles[i].density *= SPH_PARTICLE_MASS;
-        this->particles[i].pressure = SPH_GAS_CONSTANT * (this->particles[i].density - SPH_GAS_CONSTANT);
+        this->particles[i].density *= this->sph_particle_mass;
+        this->particles[i].pressure = this->sph_gas_constant * (this->particles[i].density - this->sph_rest_density);
     }
 }
 
@@ -334,14 +345,14 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
                     this->particles[j].density;
             }
         }
-        f_pressure *= -SPH_PARTICLE_MASS * this->particles[i].density;
-        f_viscosity *= SPH_PARTICLE_MASS * SPH_VISCOSITY;
-        color_field_normal *= SPH_PARTICLE_MASS;
+        f_pressure *= -this->sph_particle_mass * this->particles[i].density;
+        f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
+        color_field_normal *= this->sph_particle_mass;
         this->particles[i].normal = -1.0f * color_field_normal;
-        color_field_laplacian *= SPH_PARTICLE_MASS;
+        color_field_laplacian *= this->sph_particle_mass;
         float color_field_normal_magnitude = glm::length(color_field_normal);
-        if (color_field_normal_magnitude > SPH_SURFACE_THRESHOLD) {
-            f_surface = -SPH_SURFACE_TENSION * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
+        if (color_field_normal_magnitude > this->sph_surface_threshold) {
+            f_surface = -this->sph_surface_tension * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
         }
 
         // Calculate the acceleration.
@@ -509,8 +520,8 @@ void Particle_System::calculate_density_pressure_spatial_grid (unsigned int inde
                     }
                 }
             }
-            particle.density *= SPH_PARTICLE_MASS;
-            particle.pressure = SPH_GAS_CONSTANT * (particle.density - SPH_GAS_CONSTANT);
+            particle.density *= this->sph_particle_mass;
+            particle.pressure = this->sph_gas_constant * (particle.density - this->sph_rest_density);
         }
     }
 }
@@ -560,14 +571,14 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
                     }
                 }
             }
-            f_pressure *= -SPH_PARTICLE_MASS * particle.density;
-            f_viscosity *= SPH_PARTICLE_MASS * SPH_VISCOSITY;
-            color_field_normal *= SPH_PARTICLE_MASS;
+            f_pressure *= -this->sph_particle_mass * particle.density;
+            f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
+            color_field_normal *= this->sph_particle_mass;
             particle.normal = -1.0f * color_field_normal;
-            color_field_laplacian *= SPH_PARTICLE_MASS;
+            color_field_laplacian *= this->sph_particle_mass;
             float color_field_normal_magnitude = glm::length(color_field_normal);
-            if (color_field_normal_magnitude > SPH_SURFACE_THRESHOLD) {
-                f_surface = -SPH_SURFACE_TENSION * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
+            if (color_field_normal_magnitude > this->sph_surface_threshold) {
+                f_surface = -this->sph_surface_tension * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
             }
 
             // Calculate the acceleration.

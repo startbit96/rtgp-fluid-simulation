@@ -33,12 +33,7 @@ void rtgp_application()
                 // Initialize the input handler.
                 std::cout << "Initialize input handler." << std::endl;
                 // Since we can not provide a pointer to a member function, we use a function that calls the member function.
-                glfwSetKeyCallback(application_handler.window, 
-                    [] (GLFWwindow* window, int key, int scancode, int action, int mods) 
-                    {
-                        if (action == GLFW_PRESS) application_handler.input_handler.pressed_keys.push_back(key);
-                    }
-                );
+                glfwSetKeyCallback(application_handler.window, key_callback);
                 // Set the different key-reactions for the different contexts. 
                 // Currently it would also be enough to just use one context / drop the concept of input context but for future 
                 // development we use the concept of input-contexts.
@@ -245,6 +240,22 @@ void change_fluid_visualization ()
     application_handler.visualization_handler.change_fluid_visualization();
 }
 
+// Callbacks for the GLFW window.
+
+void key_callback (GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    // Only accept the key input for the input handler if the input was not ment for imgui.
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureKeyboard == true) {
+        // Pass the key event to imgui.
+        ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
+        return;
+    }
+    if (action == GLFW_PRESS) {
+        application_handler.input_handler.pressed_keys.push_back(key);
+    }
+}
+
 void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
 {
     // Only allow zooming when the mouse is not on an imgui window.
@@ -285,5 +296,6 @@ void cursor_position_callback(GLFWwindow* window, double x_pos, double y_pos)
     // the simulation window (but not on the imgui window), we do not need to check this here.
     // This also means when an user started to rotate the scene, the rotation will still
     // continue if the mouse hovers over the imgui window.
+    ImGui_ImplGlfw_CursorPosCallback(window, x_pos, y_pos);
     application_handler.visualization_handler.camera.rotate(x_pos, y_pos);
 }
