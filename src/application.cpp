@@ -80,9 +80,9 @@ void rtgp_application()
                 );
                 application_handler.simulation_handler.register_new_scene(
                     "Cube in the middle (big simulation space).",
-                    Cuboid(-3.0f, 3.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    Cuboid(-3.0f, 3.0f, -1.0f, 3.0f, -1.0f, 1.0f),
                     std::vector<Cuboid> {
-                        Cuboid(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f)
+                        Cuboid(-0.5f, 0.5f, 1.5f, 2.5f, -0.5f, 0.5f)
                     }
                 );
                 application_handler.simulation_handler.register_new_scene(
@@ -163,10 +163,8 @@ void rtgp_application()
                 break;
             case SIMULATION_RUNNING:
                 // Calculate the next simulation step.
-                std::cout << "simulate" << std::endl;
                 application_handler.simulation_handler.simulate();
                 // Update the visualization.
-                std::cout << "update vis" << std::endl;
                 application_handler.visualization_handler.visualize();
                 break;
             case SIMULATION_TERMINATION:

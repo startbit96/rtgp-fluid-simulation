@@ -73,7 +73,7 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
 
 void Particle_System::calculate_kernel_radius ()
 {
-    this->sph_kernel_radius = (2) * this->particle_initial_distance;
+    this->sph_kernel_radius = 2 * this->particle_initial_distance;
     // The kernels radius changed, so recalculate the coefficients and other 
     // helper variables for the kernel functions.
     this->kernel_radius_squared = pow(this->sph_kernel_radius, 2);;
@@ -299,6 +299,41 @@ void Particle_System::parallel_for (void (Particle_System::* function)(unsigned 
     }
 }
 
+void Particle_System::parallel_for_grid (void (Particle_System::* function)(unsigned int, unsigned int))
+{
+    // The parallel_for_grid function works not on a vector of particles but on the grid. 
+    // On the grid we do not know if the particles are evenly distributed over the whole simulation space
+    // (they are most likely not), so we have to dynamically assign the chunks based on the number of particles
+    // in the grid cells.
+    // Create threads and execute the desired function in chunks.
+    // Calculate the chunk size not on the number of grid cells (evenly), but on the number of particles.
+    int evenly_distributed_number_of_particles = this->number_of_particles / SIMULATION_NUMBER_OF_THREADS;
+    std::vector<std::thread> threads;
+    threads.reserve(SIMULATION_NUMBER_OF_THREADS);
+    // Create the threads.
+    int chunk_number_of_particles = 0;
+    int chunk_start = 0;
+    int chunk_end;
+    for (int idx_cell = 0; idx_cell < this->number_of_cells; idx_cell++) {
+        chunk_number_of_particles += this->spatial_grid[idx_cell].size();
+        if (chunk_number_of_particles >= evenly_distributed_number_of_particles) {
+            chunk_end = idx_cell;
+            threads.emplace_back(function, this, chunk_start, chunk_end);
+            chunk_start = idx_cell + 1;
+            chunk_number_of_particles = 0;
+        }
+        // Check if we are now in for the last thread. If so, just assign the task.
+        if (threads.size() == (SIMULATION_NUMBER_OF_THREADS - 1)) {
+            threads.emplace_back(function, this, chunk_start, this->number_of_cells - 1);
+            break;
+        }
+    }
+    // Wait for the threads to finish.
+    for (auto& thread : threads) {
+        thread.join();
+    }
+}
+
 // ===================================== SPH BRUTE FORCE IMPLEMENTATION ===================================
 
 void Particle_System::calculate_density_pressure_brute_force (unsigned int index_start, unsigned int index_end)
@@ -364,7 +399,7 @@ void Particle_System::calculate_verlet_step_brute_force (unsigned int index_star
 {
     // Compute the new position and new velocity using the velocity verlet integration.
     for (int i = index_start; i <= index_end; i++) {
-        static float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
+        float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
         glm::vec3 new_position = this->particles[i].position + 
             this->particles[i].velocity * SPH_SIMULATION_TIME_STEP + 
             this->particles[i].acceleration * time_step_squared;
@@ -449,16 +484,9 @@ inline int Particle_System::get_grid_key (glm::vec3 position)
         (position.z < 0.0f) || (position.z > this->number_of_cells_z * this->sph_kernel_radius)) {
             return -1;
     }
-    // The spatial grid will also be calculated and manipulated using parallel for loops.
-    // In order that all threads have nearly the same amount of workload, the right choice for 
-    // the generation of the key is mandatory.
-    // For this we assume, that the most common scene is that most of the particles are "on the ground"
-    // so all x and z values are present but only a few y values (only the ones near the ground).
-    // So we want grids with the same x and z coordinates but different y coordinates next to eachother
-    // so that the whole grid is in general evenly distributed.
     return
-        (Particle_System::discretize_value(position.y)) +
-        (Particle_System::discretize_value(position.x) * this->number_of_cells_y) +
+        (Particle_System::discretize_value(position.x)) +
+        (Particle_System::discretize_value(position.y) * this->number_of_cells_x) +
         (Particle_System::discretize_value(position.z) * this->number_of_cells_x * this->number_of_cells_y);
 }
 
@@ -593,7 +621,7 @@ void Particle_System::calculate_verlet_step_spatial_grid (unsigned int index_sta
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
         // Calculate for each particle in this cell the new position and velocity and resolve collision.
         for (Particle& particle : this->spatial_grid[idx_cell]) {
-            static float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
+            float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
             glm::vec3 new_position = particle.position + 
                 particle.velocity * SPH_SIMULATION_TIME_STEP + 
                 particle.acceleration * time_step_squared;
@@ -660,36 +688,30 @@ void Particle_System::update_particle_vector ()
 void Particle_System::simulate_spatial_grid ()
 {
     // Create the spatial grid if it does not exist already.
-    std::cout << "grid" << std::endl;
     if (this->spatial_grid.size() == 0) {
         this->spatial_grid.resize(this->number_of_cells);
         this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles);
     }
     // Calculate the density and the pressure for each particle using multiple threads.
-    std::cout << "density" << std::endl;
-    this->parallel_for(&Particle_System::calculate_density_pressure_spatial_grid, this->number_of_cells);
+    this->parallel_for_grid(&Particle_System::calculate_density_pressure_spatial_grid);
     // Calculate the forces and acceleration using multiple threads.
-    std::cout << "acc" << std::endl;
-    this->parallel_for(&Particle_System::calculate_acceleration_spatial_grid, this->number_of_cells);
+    this->parallel_for_grid(&Particle_System::calculate_acceleration_spatial_grid);
     // Calculate the new positions and apply collision handling using multiple threads.
-    std::cout << "verlet" << std::endl;
-    this->parallel_for(&Particle_System::calculate_verlet_step_spatial_grid, this->number_of_cells);
+    this->parallel_for_grid(&Particle_System::calculate_verlet_step_spatial_grid);
     // Get the updated particles vector.
     // NOTE: Maybe also try to apply the glBufferSubData call from the different cells using the offset of 
     // the previous ones?
-    std::cout << "vector update" << std::endl;
     this->update_particle_vector();
     // Either clear the whole spatial grid in order to be regenerated in the next step or update it.
     if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE) {
-        std::cout << "grid clear" << std::endl;
         this->spatial_grid.clear();
     }
     else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) {
         // Iterate over all cells and check if the contained particles should still be in this cell.
         // If not get them out and save them for now in another container.
-        this->parallel_for(&Particle_System::get_updated_cell_index, this->number_of_cells);
+        this->parallel_for_grid(&Particle_System::get_updated_cell_index);
         // Move the created container to the corresponding grid cells.
-        this->parallel_for(&Particle_System::apply_updated_cell_index, this->number_of_cells);
+        this->parallel_for_grid(&Particle_System::apply_updated_cell_index);
     }
     else {
         std::cout << "ERROR: Unsupported computation_mode in simulate_spatial_grid detected." << std::endl;
@@ -742,6 +764,9 @@ void Particle_System::change_computation_mode (Computation_Mode computation_mode
     // If the previous computation mode was the "UPDATE" version of the spatial grid, 
     // also clear the spatial grid so that if the "UPDATE" mode gets activated again,
     // the spatial grid will be regenerated with the up-to-date data.
+    if (computation_mode == this->computation_mode) {
+        return;
+    }
     if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) {
         this->spatial_grid.clear();
     }

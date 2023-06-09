@@ -33,27 +33,27 @@
 #define SPH_PARTICLE_MASS_MAX                   0.1f
 #define SPH_PARTICLE_MASS_STEP                  0.005f
 // Rest density of the fluid in kg/m^3.
-#define SPH_REST_DENSITY                        998.5f
-#define SPH_REST_DENSITY_MIN                    900.00f
+#define SPH_REST_DENSITY                        0.1f
+#define SPH_REST_DENSITY_MIN                    0.1f
 #define SPH_REST_DENSITY_MAX                    1100.00f
 #define SPH_REST_DENSITY_STEP                   0.5f
 // Gas constant in J /(kg * K) on Nm / kg.
-#define SPH_GAS_CONSTANT                        0.0000001f
+#define SPH_GAS_CONSTANT                        0.1f
 #define SPH_GAS_CONSTANT_MIN                    0.000001f
-#define SPH_GAS_CONSTANT_MAX                    0.00001f
-#define SPH_GAS_CONSTANT_STEP                   0.0000001f
+#define SPH_GAS_CONSTANT_MAX                    1.0f
+#define SPH_GAS_CONSTANT_STEP                   0.005f
 // Viscosity in N s / m^2 or Pa * s.
-#define SPH_VISCOSITY                           0.0001f
-#define SPH_VISCOSITY_MIN                       0.0001f
+#define SPH_VISCOSITY                           1.5f
+#define SPH_VISCOSITY_MIN                       0.00001f
 #define SPH_VISCOSITY_MAX                       10.0f
 #define SPH_VISCOSITY_STEP                      0.5f
 // Surface tension in N / m.
-#define SPH_SURFACE_TENSION                     30.0f
+#define SPH_SURFACE_TENSION                     1.0728f
 #define SPH_SURFACE_TENSION_MIN                 0.005f
 #define SPH_SURFACE_TENSION_MAX                 50.0f
-#define SPH_SURFACE_TENSION_STEP                0.5f
+#define SPH_SURFACE_TENSION_STEP                0.005f
 // Surface tension threshold.
-#define SPH_SURFACE_THRESHOLD                   20.00f
+#define SPH_SURFACE_THRESHOLD                   7.065f
 #define SPH_SURFACE_THRESHOLD_MIN               0.005f
 #define SPH_SURFACE_THRESHOLD_MAX               50.0f
 #define SPH_SURFACE_THRESHOLD_STEP              0.5f
@@ -65,7 +65,7 @@
 // Simulation time defines.
 #define SPH_SIMULATION_TIME_STEP                0.05f
 // Multithreading defines.
-#define SIMULATION_NUMBER_OF_THREADS            6
+#define SIMULATION_NUMBER_OF_THREADS            8
 
 
 // Gravity modes for different gravity vectors.
@@ -155,6 +155,7 @@ class Particle_System
 
         // Multithreading.
         void parallel_for (void (Particle_System::* function)(unsigned int, unsigned int), int number_of_elements);
+        void parallel_for_grid (void (Particle_System::* function)(unsigned int, unsigned int));
 
         // Brute force implementation (used also for the multithreading variant).
         // Note for the following functions: index_end is included in the for loop.

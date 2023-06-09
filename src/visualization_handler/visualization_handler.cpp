@@ -70,6 +70,8 @@ void Visualization_Handler::change_fluid_visualization ()
     // ...
 }
 
+static char textBuffer[256] = "";
+
 void Visualization_Handler::show_imgui_window ()
 {
     ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(500, 500));
@@ -78,6 +80,7 @@ void Visualization_Handler::show_imgui_window ()
         // Some visual settings.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::CollapsingHeader("Visual settings")) {
+            ImGui::InputText("Input Text", textBuffer, sizeof(textBuffer));
             ImGui::Checkbox("Show simulation space", &this->draw_simulation_space);
             ImGui::Checkbox("Show initial fluid position", &this->draw_fluid_starting_positions);
         }
@@ -89,7 +92,7 @@ void Visualization_Handler::show_imgui_window ()
             ImGui::DragFloat("rest density", &this->particle_system->sph_rest_density, 
                 SPH_REST_DENSITY_STEP, SPH_REST_DENSITY_MIN, SPH_REST_DENSITY_MAX, "%.6f");
             ImGui::DragFloat("gas constant", &this->particle_system->sph_gas_constant, 
-                SPH_GAS_CONSTANT_STEP, SPH_GAS_CONSTANT_MIN, SPH_GAS_CONSTANT_MAX, "%.6f");
+                SPH_GAS_CONSTANT_STEP, SPH_GAS_CONSTANT_MIN, SPH_GAS_CONSTANT_MAX, "%.9f");
             ImGui::DragFloat("viscosity", &this->particle_system->sph_viscosity, 
                 SPH_VISCOSITY_STEP, SPH_VISCOSITY_MIN, SPH_VISCOSITY_MAX, "%.6f");
             ImGui::DragFloat("surface tension", &this->particle_system->sph_surface_tension, 

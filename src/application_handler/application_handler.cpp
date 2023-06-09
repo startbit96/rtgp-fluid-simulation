@@ -86,7 +86,7 @@ bool Application_Handler::initialize_window()
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsLight();
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(this->window, false);
+    ImGui_ImplGlfw_InitForOpenGL(this->window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 
     return true;
