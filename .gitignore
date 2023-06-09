@@ -2,6 +2,7 @@ build/
 .vscode
 out/
 .DS_Store
+imgui.ini
 
 # cmake related files (from the cmake-gitignore template):
 CMakeLists.txt.user

@@ -2,6 +2,10 @@
 
 #include "application_handler.h"
 
+#include "../imgui/imgui.h"
+#include "../imgui/imgui_impl_glfw.h"
+#include "../imgui/imgui_impl_opengl3.h"
+
 Application_Handler::Application_Handler()
 {
     this->_is_running = true;
@@ -76,6 +80,15 @@ bool Application_Handler::initialize_window()
     // Enable z-test.
     glEnable(GL_DEPTH_TEST);
 
+    // Initialize imgui.
+    ImGui::CreateContext();
+    // Setup Dear ImGui style.
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(this->window, false);
+    ImGui_ImplOpenGL3_Init("#version 330 core");
+
     return true;
 }
 
@@ -94,7 +107,12 @@ void Application_Handler::terminate ()
 {
     // Stop the application.
     this->_is_running = false;
+    // Cleanup imgui.
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     // Terminate GLFW.
+    glfwDestroyWindow(this->window);
     glfwTerminate();
 }
 

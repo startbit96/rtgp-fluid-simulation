@@ -7,6 +7,10 @@
 #include <glm/gtx/string_cast.hpp>
 #include <sstream>
 
+#include "../imgui/imgui.h"
+#include "../imgui/imgui_impl_glfw.h"
+#include "../imgui/imgui_impl_opengl3.h"
+
 #include "../utils/cuboid.h"
 #include "../utils/debug.h"
 
@@ -61,19 +65,48 @@ bool Visualization_Handler::initialize_shaders ()
     return true;
 }
 
-void Visualization_Handler::toggle_simulation_space_visualization ()
-{
-    this->draw_simulation_space = !this->draw_simulation_space;
-}
-
-void Visualization_Handler::toggle_fluid_starting_positions_visualization ()
-{
-    this->draw_fluid_starting_positions = !this->draw_fluid_starting_positions;
-}
-
 void Visualization_Handler::change_fluid_visualization ()
 {
     // ...
+}
+
+void Visualization_Handler::show_imgui_window ()
+{
+    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(500, 500));
+    {
+        ImGui::Begin("Settings", NULL);
+        // Some visual settings.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Visual settings")) {
+            ImGui::Checkbox("Show simulation space", &this->draw_simulation_space);
+            ImGui::Checkbox("Show initial fluid position", &this->draw_fluid_starting_positions);
+        }
+        // Simulation settings.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Simulation settings")) {
+            // Select the computation mode.
+            ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+            if (ImGui::TreeNode("Computation mode"))
+            {
+                for (int i = 0; i < static_cast<int>(Computation_Mode::_COMPUTATION_MODE_COUNT); i++) {
+                    if (ImGui::Selectable(to_string(static_cast<Computation_Mode>(i)), i == this->particle_system->computation_mode))
+                        this->particle_system->computation_mode = static_cast<Computation_Mode>(i);
+                }
+                ImGui::TreePop();
+            }
+            // Select the gravity mode.
+            ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+            if (ImGui::TreeNode("Gravity mode"))
+            {
+                for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
+                    if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
+                        this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
+                }
+                ImGui::TreePop();
+            }
+        }
+        ImGui::End();
+    }
 }
 
 void Visualization_Handler::visualize ()
@@ -144,6 +177,17 @@ void Visualization_Handler::visualize ()
 
     // Unbind.
     GLCall( glBindVertexArray(0) );
+
+
+    // Set up and draw the imgui window.
+    // Start the Dear ImGui frame.
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    this->show_imgui_window();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
     // Swap front and back buffers.
     glfwSwapBuffers(this->window);
 }

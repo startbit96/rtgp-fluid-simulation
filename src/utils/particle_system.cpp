@@ -17,6 +17,7 @@ Particle_System::Particle_System ()
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE;
+    this->previous_computation_mode = this->computation_mode;
 }
 
 
@@ -496,7 +497,7 @@ void Particle_System::calculate_density_pressure_spatial_grid (unsigned int inde
         neighboring_cells_indices.push_back(idx_cell);
         // For each particle in this cell.
         for (Particle& particle : this->spatial_grid[idx_cell]) {
-            particle.density = 0;
+            particle.density = 0.0f;
             // Look in all neighboring cells (this includes also the current cell).
             for (int idx_neighbor_cell: neighboring_cells_indices) {
                 // Look at all the particles in these neighboring cells.
@@ -649,22 +650,28 @@ void Particle_System::update_particle_vector ()
 void Particle_System::simulate_spatial_grid ()
 {
     // Create the spatial grid if it does not exist already.
+    std::cout << "grid" << std::endl;
     if (this->spatial_grid.size() == 0) {
         this->spatial_grid.resize(this->number_of_cells);
         this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles);
     }
     // Calculate the density and the pressure for each particle using multiple threads.
+    std::cout << "density" << std::endl;
     this->parallel_for(&Particle_System::calculate_density_pressure_spatial_grid, this->number_of_cells);
     // Calculate the forces and acceleration using multiple threads.
+    std::cout << "acc" << std::endl;
     this->parallel_for(&Particle_System::calculate_acceleration_spatial_grid, this->number_of_cells);
     // Calculate the new positions and apply collision handling using multiple threads.
+    std::cout << "verlet" << std::endl;
     this->parallel_for(&Particle_System::calculate_verlet_step_spatial_grid, this->number_of_cells);
     // Get the updated particles vector.
     // NOTE: Maybe also try to apply the glBufferSubData call from the different cells using the offset of 
     // the previous ones?
+    std::cout << "vector update" << std::endl;
     this->update_particle_vector();
     // Either clear the whole spatial grid in order to be regenerated in the next step or update it.
     if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE) {
+        std::cout << "grid clear" << std::endl;
         this->spatial_grid.clear();
     }
     else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) {
@@ -685,7 +692,11 @@ void Particle_System::simulate_spatial_grid ()
 
 void Particle_System::simulate ()
 {
+    // Check if a change in computation mode happened.
+    this->check_for_computation_mode_change();
+    // Next simulation step (we need this for some gravity modes).
     this->simulation_step++;
+    // Simulate depending on the selected computation mode.
     if ((this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) || 
         (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING)) {
         this->simulate_brute_force();
@@ -728,6 +739,20 @@ void Particle_System::change_computation_mode (Computation_Mode computation_mode
     }
     this->computation_mode = computation_mode;
     std::cout << "Activated computation mode '" << to_string(this->computation_mode) << "'." << std::endl;
+}
+
+void Particle_System::check_for_computation_mode_change ()
+{
+    // We need to check if the computation mode was changed by simply setting the computation mode.
+    // This could be the case if the computation mode was set by imgui.
+    if (this->computation_mode == this->previous_computation_mode) {
+        return;
+    }
+    else if (this->previous_computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) {
+        // Clear the spatial grid so it has to be recalculated if the update mode gets selected again.
+        this->spatial_grid.clear();
+    }
+    this->previous_computation_mode = this->computation_mode;
 }
 
 

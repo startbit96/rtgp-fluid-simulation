@@ -61,6 +61,9 @@ class Visualization_Handler
         float last_time_stamp_fps;
         unsigned int frame_counter;
 
+        // Imgui window.
+        void show_imgui_window ();
+
     public:
         // A reference to the GLFW window. It will be created in the application handler and
         // the reference to it will be passed down to the visualization handler.
@@ -77,8 +80,6 @@ class Visualization_Handler
         Visualization_Handler ();
 
         bool initialize_shaders ();
-        void toggle_simulation_space_visualization ();
-        void toggle_fluid_starting_positions_visualization ();
         void change_fluid_visualization ();
         void visualize ();
 };

@@ -3,6 +3,10 @@
 #include "application.h"
 #include "utils/debug.h"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 Application_Handler application_handler;
 
 void rtgp_application()
@@ -55,10 +59,6 @@ void rtgp_application()
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_DOWN, decrease_number_of_particles, "DECREASE NUMBER OF PARTICLES"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_G, change_gravity_mode, "CHANGE GRAVITY MODE"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_C, change_computation_mode, "CHANGE COMPUTATION MODE"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_S, toggle_simulation_space_visualization, "SHOW / HIDE SIMULATION SPACE"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_D, toggle_fluid_starting_positions_visualization, "SHOW / HIDE FLUID STARTING POSITIONS"));
                 ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_D, change_fluid_visualization, "CHANGE FLUID VISUALIZATION MODE"));
                 // Set the callbacks for zoom and rotation (mouse callbacks).
                 glfwSetScrollCallback(application_handler.window, scroll_callback);
@@ -168,8 +168,10 @@ void rtgp_application()
                 break;
             case SIMULATION_RUNNING:
                 // Calculate the next simulation step.
+                std::cout << "simulate" << std::endl;
                 application_handler.simulation_handler.simulate();
                 // Update the visualization.
+                std::cout << "update vis" << std::endl;
                 application_handler.visualization_handler.visualize();
                 break;
             case SIMULATION_TERMINATION:
@@ -233,29 +235,9 @@ void decrease_number_of_particles ()
     }
 }
 
-void change_gravity_mode ()
-{
-    application_handler.simulation_handler.particle_system.next_gravity_mode();
-}
-
-void change_computation_mode ()
-{
-    application_handler.simulation_handler.particle_system.next_computation_mode();
-}
-
 void exit_application () 
 {
     application_handler.next_state = APPLICATION_TERMINATION;
-}
-
-void toggle_simulation_space_visualization ()
-{
-    application_handler.visualization_handler.toggle_simulation_space_visualization();
-}
-
-void toggle_fluid_starting_positions_visualization ()
-{
-    application_handler.visualization_handler.toggle_fluid_starting_positions_visualization();
 }
 
 void change_fluid_visualization ()
@@ -265,20 +247,43 @@ void change_fluid_visualization ()
 
 void scroll_callback(GLFWwindow* window, double x_offset, double y_offset)
 {
+    // Only allow zooming when the mouse is not on an imgui window.
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse == true) {
+        // Pass the scroll event to imgui.
+        ImGui_ImplGlfw_ScrollCallback(window, x_offset, y_offset);
+        return;
+    }
     application_handler.visualization_handler.camera.zoom(y_offset);
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+    // Stop the rotation in any case (if we are on the simulation window or within 
+    // the imgui window... it does not matter).
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        application_handler.visualization_handler.camera.rotation_enabled = false;
+    }
+    // Does IMGUI want this event? If so, then return.
+    auto& io = ImGui::GetIO();
+    if (io.WantCaptureMouse) {
+        // Pass the click event to imgui.
+        ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+        return;
+    }
+    // The rotation will only be activated when the mouse key is pressed and also only
+    // if the mouse is NOT on the imgui window (otherwise the function did already return).
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         application_handler.visualization_handler.camera.rotation_enabled = true;
-    }
-    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        application_handler.visualization_handler.camera.rotation_enabled = false;
     }
 }
 
 void cursor_position_callback(GLFWwindow* window, double x_pos, double y_pos)
 {
+    // Here we do not return if the cursor is over the imguis window.
+    // Since the rotation of the camera is only activated when the user clicks on
+    // the simulation window (but not on the imgui window), we do not need to check this here.
+    // This also means when an user started to rotate the scene, the rotation will still
+    // continue if the mouse hovers over the imgui window.
     application_handler.visualization_handler.camera.rotate(x_pos, y_pos);
 }

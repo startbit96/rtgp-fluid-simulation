@@ -21,11 +21,7 @@ void switch_scene (int scene_id);
 void pause_resume_simulation ();
 void increase_number_of_particles ();
 void decrease_number_of_particles ();
-void change_gravity_mode ();
-void change_computation_mode ();
 void exit_application ();
-void toggle_simulation_space_visualization ();
-void toggle_fluid_starting_positions_visualization ();
 void change_fluid_visualization ();
 // Callbacks for the handling of the zoom and rotation.
 void scroll_callback(GLFWwindow* window, double x_offset, double y_offset);

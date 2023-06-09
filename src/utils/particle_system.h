@@ -41,7 +41,7 @@
 // Simulation time defines.
 #define SPH_SIMULATION_TIME_STEP                0.05f
 // Multithreading defines.
-#define SIMULATION_NUMBER_OF_THREADS            8
+#define SIMULATION_NUMBER_OF_THREADS            6
 
 
 // Gravity modes for different gravity vectors.
@@ -50,7 +50,8 @@ enum Gravity_Mode
     GRAVITY_OFF,
     GRAVITY_NORMAL,
     GRAVITY_ROT_90,
-    GRAVITY_WAVE
+    GRAVITY_WAVE,
+    _GRAVITY_MODE_COUNT
 };
 
 inline const char* to_string (Gravity_Mode gravity_mode)
@@ -70,7 +71,8 @@ enum Computation_Mode
     COMPUTATION_MODE_BRUTE_FORCE,
     COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING,
     COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE,
-    COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE
+    COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE,
+    _COMPUTATION_MODE_COUNT
 };
 
 inline const char* to_string (Computation_Mode computation_mode)
@@ -122,8 +124,13 @@ class Particle_System
         float kernel_w_viscosity_laplacian (glm::vec3 distance_vector);
 
         // Returns the gravity vector based on the selected gravity mode.
-        Gravity_Mode gravity_mode;
         glm::vec3 get_gravity_vector ();
+
+        // Some internal checks for the change of the computation mode. 
+        // If the computation mode was set from imgui we need to check if we have to
+        // delete the spatial grid.
+        Computation_Mode previous_computation_mode;
+        void check_for_computation_mode_change ();
 
         // Collision handling.
         void resolve_collision (Particle& particle);
@@ -189,6 +196,7 @@ class Particle_System
         bool decrease_number_of_particles ();
 
         // Change the gravity mode. 
+        Gravity_Mode gravity_mode;
         void next_gravity_mode ();
         void change_gravity_mode (Gravity_Mode gravity_mode);
 
