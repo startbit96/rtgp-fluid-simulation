@@ -17,7 +17,6 @@ Particle_System::Particle_System ()
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE;
-    this->previous_computation_mode = this->computation_mode;
 }
 
 
@@ -692,8 +691,6 @@ void Particle_System::simulate_spatial_grid ()
 
 void Particle_System::simulate ()
 {
-    // Check if a change in computation mode happened.
-    this->check_for_computation_mode_change();
     // Next simulation step (we need this for some gravity modes).
     this->simulation_step++;
     // Simulate depending on the selected computation mode.
@@ -739,20 +736,6 @@ void Particle_System::change_computation_mode (Computation_Mode computation_mode
     }
     this->computation_mode = computation_mode;
     std::cout << "Activated computation mode '" << to_string(this->computation_mode) << "'." << std::endl;
-}
-
-void Particle_System::check_for_computation_mode_change ()
-{
-    // We need to check if the computation mode was changed by simply setting the computation mode.
-    // This could be the case if the computation mode was set by imgui.
-    if (this->computation_mode == this->previous_computation_mode) {
-        return;
-    }
-    else if (this->previous_computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) {
-        // Clear the spatial grid so it has to be recalculated if the update mode gets selected again.
-        this->spatial_grid.clear();
-    }
-    this->previous_computation_mode = this->computation_mode;
 }
 
 

@@ -89,8 +89,9 @@ void Visualization_Handler::show_imgui_window ()
             if (ImGui::TreeNode("Computation mode"))
             {
                 for (int i = 0; i < static_cast<int>(Computation_Mode::_COMPUTATION_MODE_COUNT); i++) {
-                    if (ImGui::Selectable(to_string(static_cast<Computation_Mode>(i)), i == this->particle_system->computation_mode))
-                        this->particle_system->computation_mode = static_cast<Computation_Mode>(i);
+                    if (ImGui::Selectable(to_string(static_cast<Computation_Mode>(i)), i == this->particle_system->computation_mode)) {
+                        this->particle_system->change_computation_mode(static_cast<Computation_Mode>(i));
+                    }
                 }
                 ImGui::TreePop();
             }

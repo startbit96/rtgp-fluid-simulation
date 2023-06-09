@@ -126,12 +126,6 @@ class Particle_System
         // Returns the gravity vector based on the selected gravity mode.
         glm::vec3 get_gravity_vector ();
 
-        // Some internal checks for the change of the computation mode. 
-        // If the computation mode was set from imgui we need to check if we have to
-        // delete the spatial grid.
-        Computation_Mode previous_computation_mode;
-        void check_for_computation_mode_change ();
-
         // Collision handling.
         void resolve_collision (Particle& particle);
 
