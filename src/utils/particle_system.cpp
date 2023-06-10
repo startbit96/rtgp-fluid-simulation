@@ -18,6 +18,8 @@ Particle_System::Particle_System ()
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE;
+    this->collision_method = COLLISION_METHOD_REFLEXION;
+    this->number_of_threads = SIMULATION_NUMBER_OF_THREADS;
 }
 
 
@@ -73,7 +75,7 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
 
 void Particle_System::calculate_kernel_radius ()
 {
-    this->sph_kernel_radius = 2 * this->particle_initial_distance;
+    this->sph_kernel_radius = 4 * this->particle_initial_distance;
     // The kernels radius changed, so recalculate the coefficients and other 
     // helper variables for the kernel functions.
     this->kernel_radius_squared = pow(this->sph_kernel_radius, 2);;
@@ -238,7 +240,7 @@ void Particle_System::change_gravity_mode (Gravity_Mode gravity_mode)
 
 // ====================================== COLLISION HANDLING ======================================
 
-void Particle_System::resolve_collision (Particle& particle)
+void Particle_System::resolve_collision_relfexion_method (Particle& particle)
 {
     // Resolve collision and if a collision happened, reset the position, inverse the velocities component
     // and apply a collision damping.
@@ -271,6 +273,44 @@ void Particle_System::resolve_collision (Particle& particle)
     }
 }
 
+glm::vec3 Particle_System::resolve_collision_force_method (Particle& particle)
+{
+    // This method applies an force to a particle if its to near the border.
+    glm::vec3 f_collision = glm::vec3(0.0f);
+    float distance;
+    // x-min border.
+    distance = (this->simulation_space->x_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.x;
+    if (distance < 0.0f) {
+        f_collision.x += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+    }
+    // x-max border.
+    distance = particle.position.x - (this->simulation_space->x_max + SPH_COLLISION_DISTANCE_TOLERANCE);
+    if (distance > 0.0f) {
+        f_collision.x -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+    }
+    // y-min border.
+    distance = (this->simulation_space->y_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.y;
+    if (distance < 0.0f) {
+        f_collision.y += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+    }
+    // y-max border.
+    distance = particle.position.y - (this->simulation_space->y_max + SPH_COLLISION_DISTANCE_TOLERANCE);
+    if (distance > 0.0f) {
+        f_collision.y -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+    }
+    // z-min border.
+    distance = (this->simulation_space->z_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.z;
+    if (distance < 0.0f) {
+        f_collision.z += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+    }
+    // z-max border.
+    distance = particle.position.z - (this->simulation_space->z_max + SPH_COLLISION_DISTANCE_TOLERANCE);
+    if (distance > 0.0f) {
+        f_collision.z -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+    }
+    return f_collision;
+}
+
 
 // ====================================== MULTITHREADING ======================================
 
@@ -278,15 +318,19 @@ void Particle_System::parallel_for (void (Particle_System::* function)(unsigned 
 {
     // Create threads and execute the desired function in chunks.
     // Calculate the chunk size (it depends whether we operate on the particles vector itself or the spatial grid).
-    int chunk_size = number_of_elements / SIMULATION_NUMBER_OF_THREADS;
+    if (this->number_of_threads == 1) {
+        // Just execute the function if only one thread is desired.
+        (this->*function)(0, number_of_elements - 1);
+    }
+    int chunk_size = number_of_elements / this->number_of_threads;
     std::vector<std::thread> threads;
-    threads.reserve(SIMULATION_NUMBER_OF_THREADS);
+    threads.reserve(this->number_of_threads);
     // Create the threads.
-    for (int i = 0; i < SIMULATION_NUMBER_OF_THREADS; i++) {
+    for (int i = 0; i < this->number_of_threads; i++) {
         int chunk_start = i * chunk_size;
         int chunk_end = chunk_start + chunk_size - 1;
         // The last chunk goes until the end of the vector.
-        if (i == SIMULATION_NUMBER_OF_THREADS - 1) {
+        if (i == this->number_of_threads - 1) {
             chunk_end = number_of_elements - 1;
         }
         // With the following call we not only append the thread to the vector but with 
@@ -307,9 +351,13 @@ void Particle_System::parallel_for_grid (void (Particle_System::* function)(unsi
     // in the grid cells.
     // Create threads and execute the desired function in chunks.
     // Calculate the chunk size not on the number of grid cells (evenly), but on the number of particles.
-    int evenly_distributed_number_of_particles = this->number_of_particles / SIMULATION_NUMBER_OF_THREADS;
+    if (this->number_of_threads == 1) {
+        // Just execute the function if only one thread is desired.
+        (this->*function)(0, this->number_of_cells - 1);
+    }
+    int evenly_distributed_number_of_particles = this->number_of_particles / this->number_of_threads;
     std::vector<std::thread> threads;
-    threads.reserve(SIMULATION_NUMBER_OF_THREADS);
+    threads.reserve(this->number_of_threads);
     // Create the threads.
     int chunk_number_of_particles = 0;
     int chunk_start = 0;
@@ -323,7 +371,7 @@ void Particle_System::parallel_for_grid (void (Particle_System::* function)(unsi
             chunk_number_of_particles = 0;
         }
         // Check if we are now in for the last thread. If so, just assign the task.
-        if (threads.size() == (SIMULATION_NUMBER_OF_THREADS - 1)) {
+        if (threads.size() == (this->number_of_threads - 1)) {
             threads.emplace_back(function, this, chunk_start, this->number_of_cells - 1);
             break;
         }
@@ -390,8 +438,14 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
             f_surface = -this->sph_surface_tension * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
         }
 
+        // Resolve collision.
+        glm::vec3 f_collision = glm::vec3(0.0f);
+        if (this->collision_method == COLLISION_METHOD_FORCE) {
+            f_collision = this->resolve_collision_force_method(this->particles[i]);
+        }
+
         // Calculate the acceleration.
-        this->particles[i].acceleration = (f_pressure + f_viscosity + f_surface + f_external) / this->particles[i].density;
+        this->particles[i].acceleration = (f_pressure + f_viscosity + f_surface + f_external + f_collision) / this->particles[i].density;
     }
 }
 
@@ -408,7 +462,9 @@ void Particle_System::calculate_verlet_step_brute_force (unsigned int index_star
         this->particles[i].velocity = new_velocity;
 
         // Resolve collision.
-        this->resolve_collision(this->particles[i]);
+        if (this->collision_method == COLLISION_METHOD_REFLEXION) {
+            this->resolve_collision_relfexion_method(this->particles[i]);
+        }
     }
 }
 
@@ -529,7 +585,7 @@ void Particle_System::calculate_density_pressure_spatial_grid (unsigned int inde
             continue;
         }
         // We are now in a cell with the cell index idx_cell. Get the neighboring cells.
-        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid[idx_cell][0].position);
+        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid[idx_cell].at(0).position);
         // Push also the current cell index into this list. For the density we also need self containment so its ok that the
         // current particle is also in this list.
         neighboring_cells_indices.push_back(idx_cell);
@@ -565,7 +621,7 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
             continue;
         }
         // We are now in a cell with the cell index idx_cell. Get the neighboring cells.
-        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid[idx_cell][0].position);
+        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid[idx_cell].at(0).position);
         // Push also the current cell index into this list. For the density we also need self containment so its ok that the
         // current particle is also in this list.
         neighboring_cells_indices.push_back(idx_cell);
@@ -630,7 +686,7 @@ void Particle_System::calculate_verlet_step_spatial_grid (unsigned int index_sta
             particle.velocity = new_velocity;
 
             // Resolve collision.
-            this->resolve_collision(particle);
+            this->resolve_collision_relfexion_method(particle);
         }
     }
 }

@@ -61,11 +61,15 @@
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
 // Collision handling.
-#define SPH_COLLISION_DAMPING                   0.25f
+#define SPH_COLLISION_DAMPING                   0.1f
+#define SPH_COLLISION_WALL_SPRING_CONSTANT      100.0f
+#define SPH_COLLISION_DISTANCE_TOLERANCE        0.1f
 // Simulation time defines.
 #define SPH_SIMULATION_TIME_STEP                0.05f
 // Multithreading defines.
-#define SIMULATION_NUMBER_OF_THREADS            8
+#define SIMULATION_NUMBER_OF_THREADS            4
+#define SIMULATION_NUMBER_OF_THREADS_MIN        1
+#define SIMULATION_NUMBER_OF_THREADS_MAX        8
 
 
 // Gravity modes for different gravity vectors.
@@ -110,6 +114,23 @@ inline const char* to_string (Computation_Mode computation_mode)
     }
 }
 
+// What collision handling method to use?
+enum Collision_Method
+{
+    COLLISION_METHOD_REFLEXION,
+    COLLISION_METHOD_FORCE,
+    _COLLISION_METHOD_COUNT
+};
+
+inline const char* to_string (Collision_Method collision_method)
+{
+    switch (collision_method) {
+        case COLLISION_METHOD_REFLEXION:                    return "REFLEXION METHOD";
+        case COLLISION_METHOD_FORCE:                        return "FORCE METHOD";
+        default:                                            return "unknown collision method";
+    }
+}
+
 // Particle System.
 class Particle_System 
 {
@@ -151,7 +172,8 @@ class Particle_System
         glm::vec3 get_gravity_vector ();
 
         // Collision handling.
-        void resolve_collision (Particle& particle);
+        void resolve_collision_relfexion_method (Particle& particle);
+        glm::vec3 resolve_collision_force_method (Particle& particle);
 
         // Multithreading.
         void parallel_for (void (Particle_System::* function)(unsigned int, unsigned int), int number_of_elements);
@@ -232,6 +254,12 @@ class Particle_System
         Computation_Mode computation_mode;
         void next_computation_mode ();
         void change_computation_mode (Computation_Mode computation_mode);
+
+        // Change the collision method.
+        Collision_Method collision_method;
+
+        // Multithreading.
+        int number_of_threads;
 
         // Simulate the next step. What computation mode is internally used is determined by the 
         // setted computation mode.

@@ -74,7 +74,7 @@ static char textBuffer[256] = "";
 
 void Visualization_Handler::show_imgui_window ()
 {
-    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(500, 500));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(600, 600));
     {
         ImGui::Begin("Settings", NULL);
         // Some visual settings.
@@ -112,12 +112,27 @@ void Visualization_Handler::show_imgui_window ()
                 }
             }
         }
+        // Multithreading
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Multithreading")) {
+            ImGui::DragInt("Number of threads", &this->particle_system->number_of_threads, 
+                0.1f, SIMULATION_NUMBER_OF_THREADS_MIN, SIMULATION_NUMBER_OF_THREADS_MAX, 
+                "%d", ImGuiSliderFlags_AlwaysClamp);
+        }
         // Select the gravity mode.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::CollapsingHeader("Gravity mode")) {
             for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
                 if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
                     this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
+            }
+        }
+        // Select the collision method.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Collision method")) {
+            for (int i = 0; i < static_cast<int>(Collision_Method::_COLLISION_METHOD_COUNT); i++) {
+                if (ImGui::Selectable(to_string(static_cast<Collision_Method>(i)), i == this->particle_system->collision_method))
+                    this->particle_system->collision_method = static_cast<Collision_Method>(i);
             }
         }
         ImGui::End();
