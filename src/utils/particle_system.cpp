@@ -18,7 +18,6 @@ Particle_System::Particle_System ()
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID;
-    this->collision_method = COLLISION_METHOD_REFLEXION;
     this->number_of_threads = SIMULATION_NUMBER_OF_THREADS;
 }
 
@@ -438,11 +437,9 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
         f_pressure *= -this->sph_particle_mass;
         f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
 
-        // Resolve collision.
+        // Get the collision force.
         glm::vec3 f_collision = glm::vec3(0.0f);
-        if (this->collision_method == COLLISION_METHOD_FORCE) {
-            f_collision = this->resolve_collision_force_method(this->particles.at(i));
-        }
+        f_collision = this->resolve_collision_force_method(this->particles.at(i));
 
         // Calculate the acceleration.
         this->particles.at(i).acceleration = (f_pressure + f_viscosity + f_external + f_collision) / this->particles.at(i).density;
@@ -461,10 +458,8 @@ void Particle_System::calculate_verlet_step_brute_force (unsigned int index_star
         this->particles.at(i).position = new_position;
         this->particles.at(i).velocity = new_velocity;
 
-        // Resolve collision.
-        if (this->collision_method == COLLISION_METHOD_REFLEXION) {
-            this->resolve_collision_relfexion_method(this->particles.at(i));
-        }
+        // Resolve collision. Make sure every particle is still in the simulation space.
+        this->resolve_collision_relfexion_method(this->particles.at(i));
     }
 }
 
@@ -618,8 +613,10 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
                     glm::vec3 distance_vector = particle.position - neighbor.position;
                     float distance = glm::length(distance_vector);
                     if (distance < this->sph_kernel_radius) {
-                        f_pressure += ((particle.pressure + neighbor.pressure) / (2 * neighbor.density)) *
-                            this->kernel_w_spiky_gradient(distance_vector);
+                        if (distance > 0.0f) {
+                            f_pressure += ((particle.pressure + neighbor.pressure) / (2 * neighbor.density)) *
+                                this->kernel_w_spiky_gradient(distance_vector);
+                        }
                         f_viscosity += (neighbor.velocity - particle.velocity) * 
                             this->kernel_w_viscosity_laplacian(distance_vector) / 
                             neighbor.density;
@@ -629,11 +626,9 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
             f_pressure *= -this->sph_particle_mass;
             f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
 
-            // Resolve collision.
+            // Get the collision force.
             glm::vec3 f_collision = glm::vec3(0.0f);
-            if (this->collision_method == COLLISION_METHOD_FORCE) {
-                f_collision = this->resolve_collision_force_method(particle);
-            }
+            f_collision = this->resolve_collision_force_method(particle);
 
             // Calculate the acceleration.
             particle.acceleration = (f_pressure + f_viscosity + f_external + f_collision) / particle.density;
@@ -655,10 +650,8 @@ void Particle_System::calculate_verlet_step_spatial_grid (unsigned int index_sta
             particle.position = new_position;
             particle.velocity = new_velocity;
 
-            // Resolve collision.
-            if (this->collision_method == COLLISION_METHOD_REFLEXION) {
-                this->resolve_collision_relfexion_method(particle);
-            }
+            // Resolve collision. Make sure every particle is still in the simulation space.
+            this->resolve_collision_relfexion_method(particle);
         }
     }
 }

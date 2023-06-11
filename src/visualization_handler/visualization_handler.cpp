@@ -80,7 +80,6 @@ void Visualization_Handler::show_imgui_window ()
         // Some visual settings.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::CollapsingHeader("Visual settings")) {
-            ImGui::InputText("Input Text", textBuffer, sizeof(textBuffer));
             ImGui::Checkbox("Show simulation space", &this->draw_simulation_space);
             ImGui::Checkbox("Show initial fluid position", &this->draw_fluid_starting_positions);
         }
@@ -121,14 +120,6 @@ void Visualization_Handler::show_imgui_window ()
             for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
                 if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
                     this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
-            }
-        }
-        // Select the collision method.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Collision method")) {
-            for (int i = 0; i < static_cast<int>(Collision_Method::_COLLISION_METHOD_COUNT); i++) {
-                if (ImGui::Selectable(to_string(static_cast<Collision_Method>(i)), i == this->particle_system->collision_method))
-                    this->particle_system->collision_method = static_cast<Collision_Method>(i);
             }
         }
         ImGui::End();

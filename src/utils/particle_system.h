@@ -29,17 +29,17 @@
 #define SPH_PARTICLE_MASS_MAX                   0.1f
 #define SPH_PARTICLE_MASS_STEP                  0.005f
 // Rest density of the fluid in kg/m^3.
-#define SPH_REST_DENSITY                        0.1f
-#define SPH_REST_DENSITY_MIN                    0.1f
+#define SPH_REST_DENSITY                        0.0f
+#define SPH_REST_DENSITY_MIN                    0.0f
 #define SPH_REST_DENSITY_MAX                    1100.00f
-#define SPH_REST_DENSITY_STEP                   0.5f
+#define SPH_REST_DENSITY_STEP                   0.1f
 // Gas constant in J /(kg * K) on Nm / kg.
-#define SPH_GAS_CONSTANT                        0.1f
+#define SPH_GAS_CONSTANT                        0.14f
 #define SPH_GAS_CONSTANT_MIN                    0.000001f
-#define SPH_GAS_CONSTANT_MAX                    1.0f
+#define SPH_GAS_CONSTANT_MAX                    20.0f
 #define SPH_GAS_CONSTANT_STEP                   0.005f
 // Viscosity in N s / m^2 or Pa * s.
-#define SPH_VISCOSITY                           1.5f
+#define SPH_VISCOSITY                           0.5f
 #define SPH_VISCOSITY_MIN                       0.00001f
 #define SPH_VISCOSITY_MAX                       10.0f
 #define SPH_VISCOSITY_STEP                      0.5f
@@ -109,23 +109,6 @@ inline const char* to_string (Computation_Mode computation_mode)
         case COMPUTATION_MODE_BRUTE_FORCE:      return "BRUTE FORCE";
         case COMPUTATION_MODE_SPATIAL_GRID:     return "SPATIAL GRID";
         default:                                return "unknown computation mode";
-    }
-}
-
-// What collision handling method to use?
-enum Collision_Method
-{
-    COLLISION_METHOD_REFLEXION,
-    COLLISION_METHOD_FORCE,
-    _COLLISION_METHOD_COUNT
-};
-
-inline const char* to_string (Collision_Method collision_method)
-{
-    switch (collision_method) {
-        case COLLISION_METHOD_REFLEXION:                    return "REFLEXION METHOD";
-        case COLLISION_METHOD_FORCE:                        return "FORCE METHOD";
-        default:                                            return "unknown collision method";
     }
 }
 
@@ -245,9 +228,6 @@ class Particle_System
         Computation_Mode computation_mode;
         void next_computation_mode ();
         void change_computation_mode (Computation_Mode computation_mode);
-
-        // Change the collision method.
-        Collision_Method collision_method;
 
         // Multithreading.
         int number_of_threads;
