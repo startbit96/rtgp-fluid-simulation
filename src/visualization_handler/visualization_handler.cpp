@@ -98,6 +98,21 @@ void Visualization_Handler::show_imgui_window ()
                 this->particle_system->reset_fluid_attributes();
             }
         }
+        // Collision attributes.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Collision attributes")) {
+            ImGui::DragFloat("reflexion damping", &this->particle_system->collision_reflexion_damping, 
+                SPH_COLLISION_REFLEXION_DAMPING_STEP, SPH_COLLISION_REFLEXION_DAMPING_MIN, SPH_COLLISION_REFLEXION_DAMPING_MAX, "%.3f");
+            ImGui::DragFloat("force damping", &this->particle_system->collision_force_damping, 
+                SPH_COLLISION_FORCE_DAMPING_STEP, SPH_COLLISION_FORCE_DAMPING_MIN, SPH_COLLISION_FORCE_DAMPING_MAX, "%.3f");
+            ImGui::DragFloat("force spring const.", &this->particle_system->collision_force_spring_constant, 
+                SPH_COLLISION_FORCE_SPRING_CONSTANT_STEP, SPH_COLLISION_FORCE_SPRING_CONSTANT_MIN, SPH_COLLISION_FORCE_SPRING_CONSTANT_MAX, "%.3f");
+            ImGui::DragFloat("force distance tol.", &this->particle_system->collision_force_distance_tolerance, 
+                SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_STEP, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MIN, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MAX, "%.3f");
+            if (ImGui::Button("Reset fluid attributes")) {
+                this->particle_system->reset_collision_attributes();
+            }
+        }
         // Select the computation mode.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::CollapsingHeader("Computation mode")) {

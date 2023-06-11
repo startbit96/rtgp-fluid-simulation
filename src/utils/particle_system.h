@@ -17,7 +17,7 @@
 // Also note that if the factor is 2 that does not mean the number of 
 // particles doubles but since we are in 3D it is 2^3 = 8 times the 
 // number of particles.
-#define PARTICLE_INITIAL_DISTANCE_INIT          0.128f
+#define PARTICLE_INITIAL_DISTANCE_INIT          0.064f * sqrt(2)
 #define PARTICLE_INITIAL_DISTANCE_MIN           0.008f
 #define PARTICLE_INITIAL_DISTANCE_MAX           0.256f
 #define PARTICLE_INITIAL_DISTANCE_INC_FACTOR    sqrt(2)
@@ -47,29 +47,29 @@
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
 // Collision handling.
-#define SPH_COLLISION_DAMPING_REFLEXION_METHOD      0.5f
-#define SPH_COLLISION_DAMPING_REFLEXION_METHOD_MIN  0.95f
-#define SPH_COLLISION_DAMPING_REFLEXION_METHOD_MAX  0.95f
-#define SPH_COLLISION_DAMPING_REFLEXION_METHOD_STEP 0.95f
+#define SPH_COLLISION_REFLEXION_DAMPING             0.5f
+#define SPH_COLLISION_REFLEXION_DAMPING_MIN         0.0f
+#define SPH_COLLISION_REFLEXION_DAMPING_MAX         1.0f
+#define SPH_COLLISION_REFLEXION_DAMPING_STEP        0.005f
 // Damping constant for the spring damper system.
-#define SPH_COLLISION_DAMPING_FORCE_METHOD          5.0f
-#define SPH_COLLISION_DAMPING_FORCE_METHOD_MIN      5.0f
-#define SPH_COLLISION_DAMPING_FORCE_METHOD_MAX      5.0f
-#define SPH_COLLISION_DAMPING_FORCE_METHOD_STEP     5.0f
+#define SPH_COLLISION_FORCE_DAMPING                 5.0f
+#define SPH_COLLISION_FORCE_DAMPING_MIN             0.1f
+#define SPH_COLLISION_FORCE_DAMPING_MAX             100.0f
+#define SPH_COLLISION_FORCE_DAMPING_STEP            0.05f
 // Spring constant for the spring damper system.
-#define SPH_COLLISION_WALL_SPRING_CONSTANT          1000.0f
-#define SPH_COLLISION_WALL_SPRING_CONSTANT_MIN      1000.0f
-#define SPH_COLLISION_WALL_SPRING_CONSTANT_MAX      1000.0f
-#define SPH_COLLISION_WALL_SPRING_CONSTANT_STEP     1000.0f
+#define SPH_COLLISION_FORCE_SPRING_CONSTANT         1000.0f
+#define SPH_COLLISION_FORCE_SPRING_CONSTANT_MIN     1.0f
+#define SPH_COLLISION_FORCE_SPRING_CONSTANT_MAX     2000.0f
+#define SPH_COLLISION_FORCE_SPRING_CONSTANT_STEP    0.1f
 // When should the collision force be applied? (only for the force method)
-#define SPH_COLLISION_DISTANCE_TOLERANCE            0.1f
-#define SPH_COLLISION_DISTANCE_TOLERANCE_MIN        0.05f
-#define SPH_COLLISION_DISTANCE_TOLERANCE_MAX        0.05f
-#define SPH_COLLISION_DISTANCE_TOLERANCE_STEP       0.05f
+#define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE      0.1f
+#define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MIN  0.01f
+#define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MAX  0.5f
+#define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_STEP 0.001f
 // Simulation time defines.
 #define SPH_SIMULATION_TIME_STEP                0.05f
 // Multithreading defines.
-#define SIMULATION_NUMBER_OF_THREADS            4
+#define SIMULATION_NUMBER_OF_THREADS            8
 #define SIMULATION_NUMBER_OF_THREADS_MIN        1
 #define SIMULATION_NUMBER_OF_THREADS_MAX        8
 
@@ -218,6 +218,13 @@ class Particle_System
         float sph_gas_constant;
         float sph_viscosity;
         void reset_fluid_attributes ();
+
+        // Simulation collision settings.
+        float collision_reflexion_damping;
+        float collision_force_damping;
+        float collision_force_spring_constant;
+        float collision_force_distance_tolerance;
+        void reset_collision_attributes ();
 
         // Change the gravity mode. 
         Gravity_Mode gravity_mode;

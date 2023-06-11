@@ -15,6 +15,7 @@ Particle_System::Particle_System ()
     this->particle_initial_distance = PARTICLE_INITIAL_DISTANCE_INIT;
     this->calculate_kernel_radius();
     this->reset_fluid_attributes();
+    this->reset_collision_attributes();
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID;
@@ -104,6 +105,14 @@ void Particle_System::reset_fluid_attributes ()
     this->sph_rest_density = SPH_REST_DENSITY;
     this->sph_gas_constant = SPH_GAS_CONSTANT;
     this->sph_viscosity = SPH_VISCOSITY;
+}
+
+void Particle_System::reset_collision_attributes ()
+{
+    this->collision_reflexion_damping = SPH_COLLISION_REFLEXION_DAMPING;
+    this->collision_force_damping = SPH_COLLISION_FORCE_DAMPING;
+    this->collision_force_spring_constant = SPH_COLLISION_FORCE_SPRING_CONSTANT;
+    this->collision_force_distance_tolerance = SPH_COLLISION_FORCE_DISTANCE_TOLERANCE;
 }
 
 
@@ -242,29 +251,29 @@ void Particle_System::resolve_collision_relfexion_method (Particle& particle)
     // x.
     if (particle.position.x < this->simulation_space->x_min) {
         particle.position.x = this->simulation_space->x_min;
-        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
+        particle.velocity.x = -particle.velocity.x * (1.0f - this->collision_reflexion_damping);
     }
     else if (particle.position.x > this->simulation_space->x_max) {
         particle.position.x = this->simulation_space->x_max;
-        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
+        particle.velocity.x = -particle.velocity.x * (1.0f - this->collision_reflexion_damping);
     }
     // y.
     if (particle.position.y < this->simulation_space->y_min) {
         particle.position.y = this->simulation_space->y_min;
-        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
+        particle.velocity.y = -particle.velocity.y * (1.0f - this->collision_reflexion_damping);
     }
     else if (particle.position.y > this->simulation_space->y_max) {
         particle.position.y = this->simulation_space->y_max;
-        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
+        particle.velocity.y = -particle.velocity.y * (1.0f - this->collision_reflexion_damping);
     }
     // z.
     if (particle.position.z < this->simulation_space->z_min) {
         particle.position.z = this->simulation_space->z_min;
-        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
+        particle.velocity.z = -particle.velocity.z * (1.0f - this->collision_reflexion_damping);
     }
     else if (particle.position.z > this->simulation_space->z_max) {
         particle.position.z = this->simulation_space->z_max;
-        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
+        particle.velocity.z = -particle.velocity.z * (1.0f - this->collision_reflexion_damping);
     }
 }
 
@@ -278,40 +287,40 @@ glm::vec3 Particle_System::resolve_collision_force_method (Particle particle)
     glm::vec3 f_collision = glm::vec3(0.0f);
     float distance;
     // x-min border.
-    distance = (this->simulation_space->x_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.x;
+    distance = (this->simulation_space->x_min + this->collision_force_distance_tolerance) - particle.position.x;
     if (distance > 0.0f) {
-        f_collision.x += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
-        f_collision.x += SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.x;
+        f_collision.x += this->collision_force_spring_constant * distance;
+        f_collision.x += this->collision_force_damping  * particle.velocity.x;
     }
     // x-max border.
-    distance = particle.position.x - (this->simulation_space->x_max - SPH_COLLISION_DISTANCE_TOLERANCE);
+    distance = particle.position.x - (this->simulation_space->x_max - this->collision_force_distance_tolerance);
     if (distance > 0.0f) {
-        f_collision.x -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
-        f_collision.x -= SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.x;
+        f_collision.x -= this->collision_force_spring_constant * distance;
+        f_collision.x -= this->collision_force_damping  * particle.velocity.x;
     }
     // y-min border.
-    distance = (this->simulation_space->y_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.y;
+    distance = (this->simulation_space->y_min + this->collision_force_distance_tolerance) - particle.position.y;
     if (distance > 0.0f) {
-        f_collision.y += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
-        f_collision.y += SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.y;
+        f_collision.y += this->collision_force_spring_constant * distance;
+        f_collision.y += this->collision_force_damping  * particle.velocity.y;
     }
     // y-max border.
-    distance = particle.position.y - (this->simulation_space->y_max - SPH_COLLISION_DISTANCE_TOLERANCE);
+    distance = particle.position.y - (this->simulation_space->y_max - this->collision_force_distance_tolerance);
     if (distance > 0.0f) {
-        f_collision.y -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
-        f_collision.y -= SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.y;
+        f_collision.y -= this->collision_force_spring_constant * distance;
+        f_collision.y -= this->collision_force_damping  * particle.velocity.y;
     }
     // z-min border.
-    distance = (this->simulation_space->z_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.z;
+    distance = (this->simulation_space->z_min + this->collision_force_distance_tolerance) - particle.position.z;
     if (distance > 0.0f) {
-        f_collision.z += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
-        f_collision.z += SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.z;
+        f_collision.z += this->collision_force_spring_constant * distance;
+        f_collision.z += this->collision_force_damping  * particle.velocity.z;
     }
     // z-max border.
-    distance = particle.position.z - (this->simulation_space->z_max - SPH_COLLISION_DISTANCE_TOLERANCE);
+    distance = particle.position.z - (this->simulation_space->z_max - this->collision_force_distance_tolerance);
     if (distance > 0.0f) {
-        f_collision.z -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
-        f_collision.z -= SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.z;
+        f_collision.z -= this->collision_force_spring_constant * distance;
+        f_collision.z -= this->collision_force_damping  * particle.velocity.z;
     }
     return f_collision;
 }
@@ -385,6 +394,8 @@ void Particle_System::parallel_for_grid (void (Particle_System::* function)(unsi
             break;
         }
         // Check if we are now in for the last thread. If so, just assign the task.
+        // It can also be that the particles are so unevenly distributed that e.g. after 6/8 threads most of 
+        // the particles are assigned to the threads and a seventh one would not be filled up completely. Check this case too.
         if ((threads.size() == (this->number_of_threads - 1)) || 
             ((this->number_of_particles - already_assigned_number_of_particles) < evenly_distributed_number_of_particles)) {
             threads.emplace_back(function, this, chunk_start, this->number_of_cells - 1);

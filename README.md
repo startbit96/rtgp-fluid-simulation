@@ -1,16 +1,7 @@
 # rtgp-fluid-simulation
 Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time Graphics Programming"](https://www.unimi.it/en/education/degree-programme-courses/2023/real-time-graphics-programming) at the [Università degli Studi di Milano Statale](https://www.unimi.it/en).
 
-*To do: include GIF of application here.*
-
-## Notes To Do
-- change the C++ types to OpenGL Types (where OpenGL is used)
-- add enough comments
-- delete shaders at the end
-- is there a way to make the relative paths more robust?
-- everything private that can be private?
-- save termination of the program if the shaders could no be loaded
-- add keys for scene switch depending on number of registered scenes
+![example screenshot](./assets/20230611_screenshot.png)
 
 ## Dependencies
 
@@ -70,6 +61,13 @@ Note that because of relative paths for loading the shaders, you cannot run the 
 
 ## Benchmarking
 fps, different amount of particles, ...
+
+## Notes To Do
+- change the C++ types to OpenGL Types (where OpenGL is used)
+- delete shaders at the end
+- everything private that can be private?
+- save termination of the program if the shaders could no be loaded
+- add keys for scene switch depending on number of registered scenes
 
 ## References
 The used method for the fluid simulation is based on the paper ["Particle-based fluid simulation for interactive applications" from Mueller et al.](https://dl.acm.org/doi/10.5555/846276.846298) from 2003.  
