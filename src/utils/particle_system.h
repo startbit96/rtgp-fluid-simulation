@@ -43,16 +43,6 @@
 #define SPH_VISCOSITY_MIN                       0.00001f
 #define SPH_VISCOSITY_MAX                       10.0f
 #define SPH_VISCOSITY_STEP                      0.5f
-// Surface tension in N / m.
-#define SPH_SURFACE_TENSION                     1.0728f
-#define SPH_SURFACE_TENSION_MIN                 0.005f
-#define SPH_SURFACE_TENSION_MAX                 50.0f
-#define SPH_SURFACE_TENSION_STEP                0.005f
-// Surface tension threshold.
-#define SPH_SURFACE_THRESHOLD                   7.065f
-#define SPH_SURFACE_THRESHOLD_MIN               0.005f
-#define SPH_SURFACE_THRESHOLD_MAX               50.0f
-#define SPH_SURFACE_THRESHOLD_STEP              0.5f
 // Gravity mode defines.
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
@@ -244,8 +234,6 @@ class Particle_System
         float sph_rest_density;
         float sph_gas_constant;
         float sph_viscosity;
-        float sph_surface_tension;
-        float sph_surface_threshold;
         void reset_fluid_attributes ();
 
         // Change the gravity mode. 

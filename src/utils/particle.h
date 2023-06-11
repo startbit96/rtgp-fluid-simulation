@@ -10,7 +10,6 @@ struct Particle
     float pressure;
     glm::vec3 velocity;
     glm::vec3 acceleration;
-    glm::vec3 normal;
 };
 
 // A function that returns particle based on the given x, y, z position.

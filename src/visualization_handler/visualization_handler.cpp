@@ -95,10 +95,6 @@ void Visualization_Handler::show_imgui_window ()
                 SPH_GAS_CONSTANT_STEP, SPH_GAS_CONSTANT_MIN, SPH_GAS_CONSTANT_MAX, "%.9f");
             ImGui::DragFloat("viscosity", &this->particle_system->sph_viscosity, 
                 SPH_VISCOSITY_STEP, SPH_VISCOSITY_MIN, SPH_VISCOSITY_MAX, "%.6f");
-            ImGui::DragFloat("surface tension", &this->particle_system->sph_surface_tension, 
-                SPH_SURFACE_TENSION_STEP, SPH_SURFACE_TENSION_MIN, SPH_SURFACE_TENSION_MAX, "%.6f");
-            ImGui::DragFloat("surface threshold", &this->particle_system->sph_surface_threshold, 
-                SPH_SURFACE_TENSION_STEP, SPH_SURFACE_TENSION_MIN, SPH_SURFACE_TENSION_MAX, "%.6f");
             if (ImGui::Button("Reset fluid attributes")) {
                 this->particle_system->reset_fluid_attributes();
             }

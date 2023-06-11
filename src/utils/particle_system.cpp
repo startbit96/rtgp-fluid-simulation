@@ -105,8 +105,6 @@ void Particle_System::reset_fluid_attributes ()
     this->sph_rest_density = SPH_REST_DENSITY;
     this->sph_gas_constant = SPH_GAS_CONSTANT;
     this->sph_viscosity = SPH_VISCOSITY;
-    this->sph_surface_tension = SPH_SURFACE_TENSION;
-    this->sph_surface_threshold = SPH_SURFACE_THRESHOLD;
 }
 
 
@@ -424,9 +422,6 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
     for (int i = index_start; i <= index_end; i++) {
         glm::vec3 f_pressure(0.0f);
         glm::vec3 f_viscosity(0.0f);
-        glm::vec3 f_surface(0.0f);
-        glm::vec3 color_field_normal(0.0f);
-        float color_field_laplacian = 0.0f;
 
         // Calculate the forces based on all particles nearby.
         for (int j = 0; j < this->number_of_particles; j++) {
@@ -438,21 +433,10 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
                 f_viscosity += (this->particles.at(j).velocity - this->particles.at(i).velocity) * 
                     this->kernel_w_viscosity_laplacian(distance_vector) / 
                     this->particles.at(j).density;
-                color_field_normal += this->kernel_w_poly6_gradient(distance_vector) / 
-                    this->particles.at(j).density;
-                color_field_laplacian += this->kernel_w_poly6_laplacian(distance_vector) / 
-                    this->particles.at(j).density;
             }
         }
         f_pressure *= -this->sph_particle_mass;
         f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
-        color_field_normal *= this->sph_particle_mass;
-        this->particles.at(i).normal = -1.0f * color_field_normal;
-        color_field_laplacian *= this->sph_particle_mass;
-        float color_field_normal_magnitude = glm::length(color_field_normal);
-        if (color_field_normal_magnitude > this->sph_surface_threshold) {
-            f_surface = -this->sph_surface_tension * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
-        }
 
         // Resolve collision.
         glm::vec3 f_collision = glm::vec3(0.0f);
@@ -461,7 +445,7 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
         }
 
         // Calculate the acceleration.
-        this->particles.at(i).acceleration = (f_pressure + f_viscosity + f_surface + f_external + f_collision) / this->particles.at(i).density;
+        this->particles.at(i).acceleration = (f_pressure + f_viscosity + f_external + f_collision) / this->particles.at(i).density;
     }
 }
 
@@ -624,9 +608,6 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
         for (Particle& particle : this->spatial_grid.at(idx_cell)) {
             glm::vec3 f_pressure(0.0f);
             glm::vec3 f_viscosity(0.0f);
-            glm::vec3 f_surface(0.0f);
-            glm::vec3 color_field_normal(0.0f);
-            float color_field_laplacian = 0.0f;
             // Look in all neighboring cells (this includes also the current cell).
             for (int idx_neighbor_cell: neighboring_cells_indices) {
                 // Look at all the particles in these neighboring cells.
@@ -642,22 +623,11 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
                         f_viscosity += (neighbor.velocity - particle.velocity) * 
                             this->kernel_w_viscosity_laplacian(distance_vector) / 
                             neighbor.density;
-                        color_field_normal += this->kernel_w_poly6_gradient(distance_vector) / 
-                            neighbor.density;
-                        color_field_laplacian += this->kernel_w_poly6_laplacian(distance_vector) / 
-                            neighbor.density;
                     }
                 }
             }
             f_pressure *= -this->sph_particle_mass;
             f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
-            color_field_normal *= this->sph_particle_mass;
-            particle.normal = -1.0f * color_field_normal;
-            color_field_laplacian *= this->sph_particle_mass;
-            float color_field_normal_magnitude = glm::length(color_field_normal);
-            if (color_field_normal_magnitude > this->sph_surface_threshold) {
-                f_surface = -this->sph_surface_tension * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
-            }
 
             // Resolve collision.
             glm::vec3 f_collision = glm::vec3(0.0f);
@@ -666,7 +636,7 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
             }
 
             // Calculate the acceleration.
-            particle.acceleration = (f_pressure + f_viscosity + f_surface + f_external + f_collision) / particle.density;
+            particle.acceleration = (f_pressure + f_viscosity + f_external + f_collision) / particle.density;
         }
     }
 }
