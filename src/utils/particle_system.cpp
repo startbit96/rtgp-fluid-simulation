@@ -17,7 +17,7 @@ Particle_System::Particle_System ()
     this->reset_fluid_attributes();
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
-    this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE;
+    this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID;
     this->collision_method = COLLISION_METHOD_REFLEXION;
     this->number_of_threads = SIMULATION_NUMBER_OF_THREADS;
 }
@@ -31,7 +31,7 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     this->particles.clear();
     // Fill all cuboids with particles.
     for (int i = 0; i < cuboids.size(); i++) {
-        cuboids[i].fill_with_particles(this->particle_initial_distance, this->particles);
+        cuboids.at(i).fill_with_particles(this->particle_initial_distance, this->particles);
     }
     // Get the number of particles.
     this->number_of_particles = this->particles.size();
@@ -50,7 +50,7 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
 
     // Copy the data into the vertex buffer object.
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
-    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * this->number_of_particles, &this->particles[0], GL_STATIC_DRAW) );
+    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(Particle) * this->number_of_particles, &this->particles.at(0), GL_STATIC_DRAW) );
 
     // Copy the indices into the index buffer object.
     GLCall( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->index_buffer_object) );
@@ -58,7 +58,7 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
     for (unsigned int i = 0; i < this->number_of_particles; i++) {
         this->particle_indices.push_back(i);
     }
-    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_particles, &this->particle_indices[0], GL_STATIC_DRAW) );
+    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_particles, &this->particle_indices.at(0), GL_STATIC_DRAW) );
 
     // Describe the vertex buffer layout of a particle.
     describe_particle_memory_layout();
@@ -69,8 +69,6 @@ void Particle_System::generate_initial_particles (std::vector<Cuboid>& cuboids)
 
     // Reset the simulation time.
     this->simulation_step = 0;
-    // Clear the spatial grid so that it has to be refilled.
-    this->spatial_grid.clear();
 }
 
 void Particle_System::calculate_kernel_radius ()
@@ -247,66 +245,76 @@ void Particle_System::resolve_collision_relfexion_method (Particle& particle)
     // x.
     if (particle.position.x < this->simulation_space->x_min) {
         particle.position.x = this->simulation_space->x_min;
-        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING;
+        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
     }
     else if (particle.position.x > this->simulation_space->x_max) {
         particle.position.x = this->simulation_space->x_max;
-        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING;
+        particle.velocity.x = -particle.velocity.x * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
     }
     // y.
     if (particle.position.y < this->simulation_space->y_min) {
         particle.position.y = this->simulation_space->y_min;
-        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING;
+        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
     }
     else if (particle.position.y > this->simulation_space->y_max) {
         particle.position.y = this->simulation_space->y_max;
-        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING;
+        particle.velocity.y = -particle.velocity.y * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
     }
     // z.
     if (particle.position.z < this->simulation_space->z_min) {
         particle.position.z = this->simulation_space->z_min;
-        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING;
+        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
     }
     else if (particle.position.z > this->simulation_space->z_max) {
         particle.position.z = this->simulation_space->z_max;
-        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING;
+        particle.velocity.z = -particle.velocity.z * SPH_COLLISION_DAMPING_REFLEXION_METHOD;
     }
 }
 
-glm::vec3 Particle_System::resolve_collision_force_method (Particle& particle)
+glm::vec3 Particle_System::resolve_collision_force_method (Particle particle)
 {
     // This method applies an force to a particle if its to near the border.
+    // It is basically a spring damper system.
+    // Note that this method is only allowed in the brute force mode and not in the spatial grid mode.
+    // Using this collision mode, the particles can swing a little bit outside the box. With a fixed grid
+    // over the simulation space, these particles would be outside the grid.
     glm::vec3 f_collision = glm::vec3(0.0f);
     float distance;
     // x-min border.
     distance = (this->simulation_space->x_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.x;
-    if (distance < 0.0f) {
+    if (distance > 0.0f) {
         f_collision.x += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+        f_collision.x += SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.x;
     }
     // x-max border.
-    distance = particle.position.x - (this->simulation_space->x_max + SPH_COLLISION_DISTANCE_TOLERANCE);
+    distance = particle.position.x - (this->simulation_space->x_max - SPH_COLLISION_DISTANCE_TOLERANCE);
     if (distance > 0.0f) {
         f_collision.x -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+        f_collision.x -= SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.x;
     }
     // y-min border.
     distance = (this->simulation_space->y_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.y;
-    if (distance < 0.0f) {
+    if (distance > 0.0f) {
         f_collision.y += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+        f_collision.y += SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.y;
     }
     // y-max border.
-    distance = particle.position.y - (this->simulation_space->y_max + SPH_COLLISION_DISTANCE_TOLERANCE);
+    distance = particle.position.y - (this->simulation_space->y_max - SPH_COLLISION_DISTANCE_TOLERANCE);
     if (distance > 0.0f) {
         f_collision.y -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+        f_collision.y -= SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.y;
     }
     // z-min border.
     distance = (this->simulation_space->z_min + SPH_COLLISION_DISTANCE_TOLERANCE) - particle.position.z;
-    if (distance < 0.0f) {
+    if (distance > 0.0f) {
         f_collision.z += SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+        f_collision.z += SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.z;
     }
     // z-max border.
-    distance = particle.position.z - (this->simulation_space->z_max + SPH_COLLISION_DISTANCE_TOLERANCE);
+    distance = particle.position.z - (this->simulation_space->z_max - SPH_COLLISION_DISTANCE_TOLERANCE);
     if (distance > 0.0f) {
         f_collision.z -= SPH_COLLISION_WALL_SPRING_CONSTANT * distance;
+        f_collision.z -= SPH_COLLISION_DAMPING_FORCE_METHOD * particle.velocity.z;
     }
     return f_collision;
 }
@@ -321,6 +329,7 @@ void Particle_System::parallel_for (void (Particle_System::* function)(unsigned 
     if (this->number_of_threads == 1) {
         // Just execute the function if only one thread is desired.
         (this->*function)(0, number_of_elements - 1);
+        return;
     }
     int chunk_size = number_of_elements / this->number_of_threads;
     std::vector<std::thread> threads;
@@ -354,21 +363,29 @@ void Particle_System::parallel_for_grid (void (Particle_System::* function)(unsi
     if (this->number_of_threads == 1) {
         // Just execute the function if only one thread is desired.
         (this->*function)(0, this->number_of_cells - 1);
+        return;
     }
     int evenly_distributed_number_of_particles = this->number_of_particles / this->number_of_threads;
     std::vector<std::thread> threads;
     threads.reserve(this->number_of_threads);
     // Create the threads.
     int chunk_number_of_particles = 0;
+    int already_assigned_number_of_particles = 0;
     int chunk_start = 0;
     int chunk_end;
     for (int idx_cell = 0; idx_cell < this->number_of_cells; idx_cell++) {
-        chunk_number_of_particles += this->spatial_grid[idx_cell].size();
+        chunk_number_of_particles += this->spatial_grid.at(idx_cell).size();
         if (chunk_number_of_particles >= evenly_distributed_number_of_particles) {
             chunk_end = idx_cell;
             threads.emplace_back(function, this, chunk_start, chunk_end);
             chunk_start = idx_cell + 1;
+            already_assigned_number_of_particles += chunk_number_of_particles;
             chunk_number_of_particles = 0;
+        }
+        // Check if the number of particles is already reached (this can be if the particles are really near to each other).
+        // If so, break.
+        if (already_assigned_number_of_particles == this->number_of_particles) {
+            break;
         }
         // Check if we are now in for the last thread. If so, just assign the task.
         if (threads.size() == (this->number_of_threads - 1)) {
@@ -388,15 +405,15 @@ void Particle_System::calculate_density_pressure_brute_force (unsigned int index
 {
     // Calculate the density and the pressure using the SPH method.
     for (int i = index_start; i <= index_end; i++) {
-        this->particles[i].density = 0;
+        this->particles.at(i).density = 0;
         for (int j = 0; j < this->number_of_particles; j++) {
-            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
+            glm::vec3 distance_vector = this->particles.at(i).position - this->particles.at(j).position;
             if (glm::length(distance_vector) < this->sph_kernel_radius) {
-                this->particles[i].density += this->kernel_w_poly6(distance_vector);
+                this->particles.at(i).density += this->kernel_w_poly6(distance_vector);
             }
         }
-        this->particles[i].density *= this->sph_particle_mass;
-        this->particles[i].pressure = this->sph_gas_constant * (this->particles[i].density - this->sph_rest_density);
+        this->particles.at(i).density *= this->sph_particle_mass;
+        this->particles.at(i).pressure = this->sph_gas_constant * (this->particles.at(i).density - this->sph_rest_density);
     }
 }
 
@@ -414,24 +431,24 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
         // Calculate the forces based on all particles nearby.
         for (int j = 0; j < this->number_of_particles; j++) {
             if (j == i) continue;
-            glm::vec3 distance_vector = this->particles[i].position - this->particles[j].position;
+            glm::vec3 distance_vector = this->particles.at(i).position - this->particles.at(j).position;
             if (glm::length(distance_vector) < this->sph_kernel_radius) {
-                f_pressure += (float)(this->particles[i].pressure / pow(this->particles[i].density, 2) + 
-                    this->particles[j].pressure / pow(this->particles[j].density, 2)) *
+                f_pressure += (float)(this->particles.at(i).pressure / pow(this->particles.at(i).density, 2) + 
+                    this->particles.at(j).pressure / pow(this->particles.at(j).density, 2)) *
                     this->kernel_w_spiky_gradient(distance_vector);
-                f_viscosity += (this->particles[j].velocity - this->particles[i].velocity) * 
+                f_viscosity += (this->particles.at(j).velocity - this->particles.at(i).velocity) * 
                     this->kernel_w_viscosity_laplacian(distance_vector) / 
-                    this->particles[j].density;
+                    this->particles.at(j).density;
                 color_field_normal += this->kernel_w_poly6_gradient(distance_vector) / 
-                    this->particles[j].density;
+                    this->particles.at(j).density;
                 color_field_laplacian += this->kernel_w_poly6_laplacian(distance_vector) / 
-                    this->particles[j].density;
+                    this->particles.at(j).density;
             }
         }
-        f_pressure *= -this->sph_particle_mass * this->particles[i].density;
+        f_pressure *= -this->sph_particle_mass * this->particles.at(i).density;
         f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
         color_field_normal *= this->sph_particle_mass;
-        this->particles[i].normal = -1.0f * color_field_normal;
+        this->particles.at(i).normal = -1.0f * color_field_normal;
         color_field_laplacian *= this->sph_particle_mass;
         float color_field_normal_magnitude = glm::length(color_field_normal);
         if (color_field_normal_magnitude > this->sph_surface_threshold) {
@@ -441,11 +458,11 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
         // Resolve collision.
         glm::vec3 f_collision = glm::vec3(0.0f);
         if (this->collision_method == COLLISION_METHOD_FORCE) {
-            f_collision = this->resolve_collision_force_method(this->particles[i]);
+            f_collision = this->resolve_collision_force_method(this->particles.at(i));
         }
 
         // Calculate the acceleration.
-        this->particles[i].acceleration = (f_pressure + f_viscosity + f_surface + f_external + f_collision) / this->particles[i].density;
+        this->particles.at(i).acceleration = (f_pressure + f_viscosity + f_surface + f_external + f_collision) / this->particles.at(i).density;
     }
 }
 
@@ -454,42 +471,28 @@ void Particle_System::calculate_verlet_step_brute_force (unsigned int index_star
     // Compute the new position and new velocity using the velocity verlet integration.
     for (int i = index_start; i <= index_end; i++) {
         float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
-        glm::vec3 new_position = this->particles[i].position + 
-            this->particles[i].velocity * SPH_SIMULATION_TIME_STEP + 
-            this->particles[i].acceleration * time_step_squared;
-        glm::vec3 new_velocity = (new_position - this->particles[i].position) / SPH_SIMULATION_TIME_STEP;
-        this->particles[i].position = new_position;
-        this->particles[i].velocity = new_velocity;
+        glm::vec3 new_position = this->particles.at(i).position + 
+            this->particles.at(i).velocity * SPH_SIMULATION_TIME_STEP + 
+            this->particles.at(i).acceleration * time_step_squared;
+        glm::vec3 new_velocity = (new_position - this->particles.at(i).position) / SPH_SIMULATION_TIME_STEP;
+        this->particles.at(i).position = new_position;
+        this->particles.at(i).velocity = new_velocity;
 
         // Resolve collision.
         if (this->collision_method == COLLISION_METHOD_REFLEXION) {
-            this->resolve_collision_relfexion_method(this->particles[i]);
+            this->resolve_collision_relfexion_method(this->particles.at(i));
         }
     }
 }
 
 void Particle_System::simulate_brute_force ()
 {
-    // Do it either in sequential mode or in parallel.
-    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) {
-        // Calculate the density and the pressure for each particle.
-        this->calculate_density_pressure_brute_force(0, this->number_of_particles - 1);
-        // Calculate the forces and acceleration.
-        this->calculate_acceleration_brute_force(0, this->number_of_particles - 1);
-        // Calculate the new positions and apply collision handling.
-        this->calculate_verlet_step_brute_force(0, this->number_of_particles - 1);
-    }
-    else if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING) {
-        // Calculate the density and the pressure for each particle using multiple threads.
-        this->parallel_for(&Particle_System::calculate_density_pressure_brute_force, this->number_of_particles);
-        // Calculate the forces and acceleration using multiple threads.
-        this->parallel_for(&Particle_System::calculate_acceleration_brute_force, this->number_of_particles);
-        // Calculate the new positions and apply collision handling using multiple threads.
-        this->parallel_for(&Particle_System::calculate_verlet_step_brute_force, this->number_of_particles);
-    }
-    else {
-        std::cout << "ERROR: Unsupported computation_mode in simulate_brute_force detected." << std::endl;
-    }
+    // Calculate the density and the pressure for each particle.
+    this->parallel_for(&Particle_System::calculate_density_pressure_brute_force, this->number_of_particles);
+    // Calculate the forces and acceleration.
+    this->parallel_for(&Particle_System::calculate_acceleration_brute_force, this->number_of_particles);
+    // Calculate the new positions and velocities.
+    this->parallel_for(&Particle_System::calculate_verlet_step_brute_force, this->number_of_particles);
 }
 
 
@@ -504,22 +507,11 @@ void Particle_System::calculate_number_of_grid_cells ()
     this->number_of_cells_z = ceil((this->simulation_space->z_max - this->simulation_space->z_min) / 
         this->sph_kernel_radius);
     this->number_of_cells = this->number_of_cells_x * this->number_of_cells_y * this->number_of_cells_z;
-    // Just to make sure that the application does not run a simulation after the change of the
-    // simulation space or the kernel radius, clear the spatial grid here.
-    this->spatial_grid.clear();
-    // Resize the vector for the particles that will be moved.
-    this->particles_to_be_moved.clear();
-    this->particles_to_be_moved.resize(this->number_of_cells);
     // Resize the mutex vector.
     // Iterate over each element in the vector and assign a newly created std::mutex using std::make_unique.
     this->mutex_spatial_grid.clear();
     this->mutex_spatial_grid.resize(this->number_of_cells);
     for (auto& mutex : this->mutex_spatial_grid) {
-        mutex = std::make_unique<std::mutex>();
-    }
-    this->mutex_to_be_moved.clear();
-    this->mutex_to_be_moved.resize(this->number_of_cells);
-    for (auto& mutex : this->mutex_to_be_moved) {
         mutex = std::make_unique<std::mutex>();
     }
 }
@@ -552,9 +544,13 @@ std::vector<int> Particle_System::get_neighbor_cells_indices (glm::vec3 position
     for (int look_x = -1; look_x <= 1; look_x++) {
             for (int look_y = -1; look_y <= 1; look_y++) {
                 for (int look_z = -1; look_z <= 1; look_z++) {
-                    // Make sure not to get wrong indices for cells that do not really exist.
+                    // Do not include the cell of the position itself, only neighbors.
+                    if ((look_x == 0) && (look_y == 0) && (look_z == 0)) {
+                        continue;
+                    }
                     glm::vec3 look_position = position + glm::vec3(look_x, look_y, look_z) * this->sph_kernel_radius;
                     int grid_key = this->get_grid_key(look_position);
+                    // Make sure not to get wrong indices for cells that do not really exist.
                     if (grid_key >= 0) {
                         neighbor_cells_indices.push_back(grid_key);
                     }
@@ -568,10 +564,10 @@ void Particle_System::generate_spatial_grid (unsigned int index_start, unsigned 
 {
     for (int i = index_start; i <= index_end; i++) {
         // Assign the particle based on its position to a grid cell. Get the index of this cell.
-        int grid_key = this->get_grid_key(this->particles[i].position);
+        int grid_key = this->get_grid_key(this->particles.at(i).position);
         // Lock the spatial grid cell for the insertion of the particle.
-        std::unique_lock<std::mutex> lock(*this->mutex_spatial_grid[grid_key]);
-        this->spatial_grid[grid_key].push_back(this->particles[i]);
+        std::unique_lock<std::mutex> lock(*this->mutex_spatial_grid.at(grid_key));
+        this->spatial_grid.at(grid_key).push_back(this->particles.at(i));
         lock.unlock();
     }
 }
@@ -580,22 +576,22 @@ void Particle_System::calculate_density_pressure_spatial_grid (unsigned int inde
 {
     // The index does now not refer to the index in the particles vector but to a grid cell.
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        if (this->spatial_grid[idx_cell].size() == 0) {
+        if (this->spatial_grid.at(idx_cell).size() == 0) {
             // No particles in this cell.
             continue;
         }
         // We are now in a cell with the cell index idx_cell. Get the neighboring cells.
-        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid[idx_cell].at(0).position);
+        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid.at(idx_cell).at(0).position);
         // Push also the current cell index into this list. For the density we also need self containment so its ok that the
         // current particle is also in this list.
         neighboring_cells_indices.push_back(idx_cell);
         // For each particle in this cell.
-        for (Particle& particle : this->spatial_grid[idx_cell]) {
+        for (Particle& particle : this->spatial_grid.at(idx_cell)) {
             particle.density = 0.0f;
             // Look in all neighboring cells (this includes also the current cell).
             for (int idx_neighbor_cell: neighboring_cells_indices) {
                 // Look at all the particles in these neighboring cells.
-                for (Particle& neighbor : this->spatial_grid[idx_neighbor_cell]) {
+                for (Particle& neighbor : this->spatial_grid.at(idx_neighbor_cell)) {
                     // If they are near enough, they are used for the calculation.
                     glm::vec3 distance_vector = particle.position - neighbor.position;
                     float distance = glm::length(distance_vector);
@@ -616,17 +612,17 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
     // Calculate the forces for each particle in a cell independently.
     glm::vec3 f_external = this->get_gravity_vector();
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        if (this->spatial_grid[idx_cell].size() == 0) {
+        if (this->spatial_grid.at(idx_cell).size() == 0) {
             // No particles in this cell.
             continue;
         }
         // We are now in a cell with the cell index idx_cell. Get the neighboring cells.
-        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid[idx_cell].at(0).position);
+        std::vector<int> neighboring_cells_indices = this->get_neighbor_cells_indices(this->spatial_grid.at(idx_cell).at(0).position);
         // Push also the current cell index into this list. For the density we also need self containment so its ok that the
         // current particle is also in this list.
         neighboring_cells_indices.push_back(idx_cell);
         // For each particle in this cell.
-        for (Particle& particle : this->spatial_grid[idx_cell]) {
+        for (Particle& particle : this->spatial_grid.at(idx_cell)) {
             glm::vec3 f_pressure(0.0f);
             glm::vec3 f_viscosity(0.0f);
             glm::vec3 f_surface(0.0f);
@@ -635,7 +631,7 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
             // Look in all neighboring cells (this includes also the current cell).
             for (int idx_neighbor_cell: neighboring_cells_indices) {
                 // Look at all the particles in these neighboring cells.
-                for (Particle& neighbor : this->spatial_grid[idx_neighbor_cell]) {
+                for (Particle& neighbor : this->spatial_grid.at(idx_neighbor_cell)) {
                     // Do not use one particle on itself.
                     if (&particle == &neighbor) continue;
                     // If they are near enough, they are used for the calculation.
@@ -665,8 +661,14 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
                 f_surface = -this->sph_surface_tension * (color_field_normal / color_field_normal_magnitude) * color_field_laplacian;
             }
 
+            // Resolve collision.
+            glm::vec3 f_collision = glm::vec3(0.0f);
+            if (this->collision_method == COLLISION_METHOD_FORCE) {
+                f_collision = this->resolve_collision_force_method(particle);
+            }
+
             // Calculate the acceleration.
-            particle.acceleration = (f_pressure + f_viscosity + f_surface + f_external) / particle.density;
+            particle.acceleration = (f_pressure + f_viscosity + f_surface + f_external + f_collision) / particle.density;
         }
     }
 }
@@ -676,7 +678,7 @@ void Particle_System::calculate_verlet_step_spatial_grid (unsigned int index_sta
     // The index does now not refer to the index in the particles vector but to a grid cell.
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
         // Calculate for each particle in this cell the new position and velocity and resolve collision.
-        for (Particle& particle : this->spatial_grid[idx_cell]) {
+        for (Particle& particle : this->spatial_grid.at(idx_cell)) {
             float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
             glm::vec3 new_position = particle.position + 
                 particle.velocity * SPH_SIMULATION_TIME_STEP + 
@@ -686,56 +688,17 @@ void Particle_System::calculate_verlet_step_spatial_grid (unsigned int index_sta
             particle.velocity = new_velocity;
 
             // Resolve collision.
-            this->resolve_collision_relfexion_method(particle);
-        }
-    }
-}
-
-void Particle_System::get_updated_cell_index (unsigned int index_start, unsigned int index_end)
-{
-    // Go through the cells and then through their particles. Calculate for each particle the grid cell index
-    // based on its (now updated) position. If it is still the same then keep it in this cell, if it is another
-    // cell index, then move it into a temporary container and remove it from the previous cell.
-    for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        std::vector<Particle>& cell_particles = this->spatial_grid[idx_cell];
-        for (auto it = cell_particles.begin(); it != cell_particles.end(); ) {
-            Particle& particle = *it;
-            int new_cell_index = this->get_grid_key(particle.position);
-            if (new_cell_index != idx_cell) {
-                // We need to move the particle. Put it into the temporary container 
-                // and remove it from the cell.
-                // Make sure to lock it (maybe another thread also wants to move particles there).
-                std::unique_lock<std::mutex> lock(*this->mutex_to_be_moved[new_cell_index]);
-                this->particles_to_be_moved[new_cell_index].push_back(particle);
-                lock.unlock();
-                // Remove it and get the new iterator (points to the following element).
-                it = cell_particles.erase(it);
-            } else {
-                // The particle will be kept in this cell, so look at the next particle.
-                it++;
+            if (this->collision_method == COLLISION_METHOD_REFLEXION) {
+                this->resolve_collision_relfexion_method(particle);
             }
         }
-    }
-}
-
-void Particle_System::apply_updated_cell_index (unsigned int index_start, unsigned int index_end)
-{
-    // The function get_updated_cell_index moved particles that will no longer be part of their original cell
-    // into a temporary container (a container that exists for all cells). Now combine the cell with its corresponding
-    // container and empty the container.
-    for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        this->spatial_grid[idx_cell].insert(
-            this->spatial_grid[idx_cell].end(), 
-            std::make_move_iterator(this->particles_to_be_moved[idx_cell].begin()), 
-            std::make_move_iterator(this->particles_to_be_moved[idx_cell].end())
-        );
-        this->particles_to_be_moved[idx_cell].clear();
     }
 }
 
 void Particle_System::update_particle_vector ()
 {
     this->particles.clear();
+    this->particles.reserve(this->number_of_particles);
     for (const auto& cell : this->spatial_grid) {
         this->particles.insert(particles.end(), cell.begin(), cell.end());
     }
@@ -743,35 +706,23 @@ void Particle_System::update_particle_vector ()
 
 void Particle_System::simulate_spatial_grid ()
 {
-    // Create the spatial grid if it does not exist already.
-    if (this->spatial_grid.size() == 0) {
-        this->spatial_grid.resize(this->number_of_cells);
-        this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles);
-    }
+    // Create the spatial grid.
+    this->spatial_grid.clear();
+    this->spatial_grid.resize(this->number_of_cells);
+    this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles);
     // Calculate the density and the pressure for each particle using multiple threads.
     this->parallel_for_grid(&Particle_System::calculate_density_pressure_spatial_grid);
     // Calculate the forces and acceleration using multiple threads.
     this->parallel_for_grid(&Particle_System::calculate_acceleration_spatial_grid);
     // Calculate the new positions and apply collision handling using multiple threads.
     this->parallel_for_grid(&Particle_System::calculate_verlet_step_spatial_grid);
-    // Get the updated particles vector.
-    // NOTE: Maybe also try to apply the glBufferSubData call from the different cells using the offset of 
-    // the previous ones?
+    // Get the updated particles vector. We operated until here on the grid.
+    // Another solution was to update the grid itself (so iterate over all grid cells and over
+    // their particles and check if a particle has to be moved to another cell after this step).
+    // This was also implemented and compared to the clear-and-generate-new-method we use now it
+    // had no benefit in execution time. The last commit the update-grid-method was still implemented
+    // is "f1ab3e1".
     this->update_particle_vector();
-    // Either clear the whole spatial grid in order to be regenerated in the next step or update it.
-    if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE) {
-        this->spatial_grid.clear();
-    }
-    else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) {
-        // Iterate over all cells and check if the contained particles should still be in this cell.
-        // If not get them out and save them for now in another container.
-        this->parallel_for_grid(&Particle_System::get_updated_cell_index);
-        // Move the created container to the corresponding grid cells.
-        this->parallel_for_grid(&Particle_System::apply_updated_cell_index);
-    }
-    else {
-        std::cout << "ERROR: Unsupported computation_mode in simulate_spatial_grid detected." << std::endl;
-    }
 }
 
 
@@ -783,12 +734,10 @@ void Particle_System::simulate ()
     // Next simulation step (we need this for some gravity modes).
     this->simulation_step++;
     // Simulate depending on the selected computation mode.
-    if ((this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) || 
-        (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING)) {
+    if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) {
         this->simulate_brute_force();
     }
-    else if ((this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE) ||
-        (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE)) {
+    else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID) {
         this->simulate_spatial_grid();
     }
 }
@@ -799,15 +748,9 @@ void Particle_System::simulate ()
 void Particle_System::next_computation_mode ()
 {
     if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE) { 
-        this->change_computation_mode(COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING); 
+        this->change_computation_mode(COMPUTATION_MODE_SPATIAL_GRID); 
     }
-    else if (this->computation_mode == COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING) { 
-        this->change_computation_mode(COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE); 
-    }
-    else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE) { 
-        this->change_computation_mode(COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE); 
-    }
-    else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) { 
+    else if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID) { 
         this->change_computation_mode(COMPUTATION_MODE_BRUTE_FORCE); 
     }
     else {
@@ -817,14 +760,8 @@ void Particle_System::next_computation_mode ()
 
 void Particle_System::change_computation_mode (Computation_Mode computation_mode)
 {
-    // If the previous computation mode was the "UPDATE" version of the spatial grid, 
-    // also clear the spatial grid so that if the "UPDATE" mode gets activated again,
-    // the spatial grid will be regenerated with the up-to-date data.
     if (computation_mode == this->computation_mode) {
         return;
-    }
-    if (this->computation_mode == COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE) {
-        this->spatial_grid.clear();
     }
     this->computation_mode = computation_mode;
     std::cout << "Activated computation mode '" << to_string(this->computation_mode) << "'." << std::endl;
@@ -837,7 +774,7 @@ void Particle_System::draw (bool unbind)
 {
     // Update the particles data in the vertex buffer object.
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
-    GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Particle) * this->number_of_particles, &this->particles[0]) );
+    GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Particle) * this->number_of_particles, &this->particles.at(0)) );
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
     // Draw the particles using the vertex array object.
     GLCall( glBindVertexArray(this->vertex_array_object) );

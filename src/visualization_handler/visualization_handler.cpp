@@ -52,13 +52,13 @@ Visualization_Handler::Visualization_Handler ()
 bool Visualization_Handler::initialize_shaders ()
 {
     // Shader for visualizing the cuboids (simulation space, fluid starting positions).
-    this->cuboid_shader = new Shader("./shaders/cuboid.vert", "./shaders/cuboid.frag");
+    this->cuboid_shader = new Shader("../shaders/cuboid.vert", "../shaders/cuboid.frag");
     if (this->cuboid_shader->is_valid == false) {
         return false;
     }
     // Shaders for visualizing the fluid.
     this->fluid_shaders = std::vector<Shader> {
-        Shader("./shaders/particle.vert", "./shaders/particle.frag", "./shaders/particle.geom")
+        Shader("../shaders/particle.vert", "../shaders/particle.frag", "../shaders/particle.geom")
     };
     this->current_fluid_shader = 0;
     // If we arrive here, all shaders were read in successfully.

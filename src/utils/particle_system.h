@@ -21,10 +21,6 @@
 #define PARTICLE_INITIAL_DISTANCE_MIN           0.008f
 #define PARTICLE_INITIAL_DISTANCE_MAX           0.256f
 #define PARTICLE_INITIAL_DISTANCE_INC_FACTOR    sqrt(2)
-// Our hash function requires three big prime numbers. Define them here.
-#define HASH_FUNCTION_PRIME_NUMBER_1            73856093
-#define HASH_FUNCTION_PRIME_NUMBER_2            19349663
-#define HASH_FUNCTION_PRIME_NUMBER_3            83492791
 // SPH related defines. Define here the initial values for the simulation.
 // Define here also the min, max values and the step size for the imgui sliders.
 // Particles mass in kg.
@@ -61,9 +57,25 @@
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
 // Collision handling.
-#define SPH_COLLISION_DAMPING                   0.1f
-#define SPH_COLLISION_WALL_SPRING_CONSTANT      100.0f
-#define SPH_COLLISION_DISTANCE_TOLERANCE        0.1f
+#define SPH_COLLISION_DAMPING_REFLEXION_METHOD      0.05f
+#define SPH_COLLISION_DAMPING_REFLEXION_METHOD_MIN  0.95f
+#define SPH_COLLISION_DAMPING_REFLEXION_METHOD_MAX  0.95f
+#define SPH_COLLISION_DAMPING_REFLEXION_METHOD_STEP 0.95f
+// Damping constant for the spring damper system.
+#define SPH_COLLISION_DAMPING_FORCE_METHOD          5.0f
+#define SPH_COLLISION_DAMPING_FORCE_METHOD_MIN      5.0f
+#define SPH_COLLISION_DAMPING_FORCE_METHOD_MAX      5.0f
+#define SPH_COLLISION_DAMPING_FORCE_METHOD_STEP     5.0f
+// Spring constant for the spring damper system.
+#define SPH_COLLISION_WALL_SPRING_CONSTANT          1000.0f
+#define SPH_COLLISION_WALL_SPRING_CONSTANT_MIN      1000.0f
+#define SPH_COLLISION_WALL_SPRING_CONSTANT_MAX      1000.0f
+#define SPH_COLLISION_WALL_SPRING_CONSTANT_STEP     1000.0f
+// When should the collision force be applied? (only for the force method)
+#define SPH_COLLISION_DISTANCE_TOLERANCE            0.05f
+#define SPH_COLLISION_DISTANCE_TOLERANCE_MIN        0.05f
+#define SPH_COLLISION_DISTANCE_TOLERANCE_MAX        0.05f
+#define SPH_COLLISION_DISTANCE_TOLERANCE_STEP       0.05f
 // Simulation time defines.
 #define SPH_SIMULATION_TIME_STEP                0.05f
 // Multithreading defines.
@@ -97,20 +109,16 @@ inline const char* to_string (Gravity_Mode gravity_mode)
 enum Computation_Mode
 {
     COMPUTATION_MODE_BRUTE_FORCE,
-    COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING,
-    COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE,
-    COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE,
+    COMPUTATION_MODE_SPATIAL_GRID,
     _COMPUTATION_MODE_COUNT
 };
 
 inline const char* to_string (Computation_Mode computation_mode)
 {
     switch (computation_mode) {
-        case COMPUTATION_MODE_BRUTE_FORCE:                  return "BRUTE FORCE";
-        case COMPUTATION_MODE_BRUTE_FORCE_MULTITHREADING:   return "BRUTE FORCE WITH MUTLITHREADING";
-        case COMPUTATION_MODE_SPATIAL_GRID_CLEAR_MODE:      return "SPATIAL GRID (CLEAR AND CREATE NEW GRID)";
-        case COMPUTATION_MODE_SPATIAL_GRID_UPDATE_MODE:     return "SPATIAL GRID (UPDATE GRID)";
-        default:                                            return "unknown computation mode";
+        case COMPUTATION_MODE_BRUTE_FORCE:      return "BRUTE FORCE";
+        case COMPUTATION_MODE_SPATIAL_GRID:     return "SPATIAL GRID";
+        default:                                return "unknown computation mode";
     }
 }
 
@@ -173,7 +181,7 @@ class Particle_System
 
         // Collision handling.
         void resolve_collision_relfexion_method (Particle& particle);
-        glm::vec3 resolve_collision_force_method (Particle& particle);
+        glm::vec3 resolve_collision_force_method (Particle particle);
 
         // Multithreading.
         void parallel_for (void (Particle_System::* function)(unsigned int, unsigned int), int number_of_elements);
@@ -194,19 +202,14 @@ class Particle_System
         int number_of_cells_z;
         void calculate_number_of_grid_cells ();
         std::vector<std::vector<Particle>> spatial_grid;
-        std::vector<std::vector<Particle>> particles_to_be_moved;
         std::vector<std::unique_ptr<std::mutex>> mutex_spatial_grid;
-        std::vector<std::unique_ptr<std::mutex>> mutex_to_be_moved;
         int discretize_value (float value);
         int get_grid_key (glm::vec3 position);
-        bool grid_contains_point (glm::vec3 position);
         std::vector<int> get_neighbor_cells_indices (glm::vec3 position); 
         void generate_spatial_grid (unsigned int index_start, unsigned int index_end);
         void calculate_density_pressure_spatial_grid (unsigned int index_start, unsigned int index_end);
         void calculate_acceleration_spatial_grid (unsigned int index_start, unsigned int index_end);
         void calculate_verlet_step_spatial_grid (unsigned int index_start, unsigned int index_end);
-        void get_updated_cell_index (unsigned int index_start, unsigned int index_end);
-        void apply_updated_cell_index (unsigned int index_start, unsigned int index_end);
         void update_particle_vector ();
         void simulate_spatial_grid ();
 

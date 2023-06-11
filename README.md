@@ -11,7 +11,6 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 - everything private that can be private?
 - save termination of the program if the shaders could no be loaded
 - add keys for scene switch depending on number of registered scenes
-- add the units for the sph related defines
 
 ## Dependencies
 
@@ -59,8 +58,8 @@ If an error occurs while installing the application, make sure, that you have in
 
 ## Usage
 
-Run the application with `./build/rtgp_fluid_simulation` within the repositories directory.  
-Note that because of relative paths for loading the shaders, you cannot run the program from within the build directory.
+Run the application with `./rtgp_fluid_simulation` within the build directory.  
+Note that because of relative paths for loading the shaders, you cannot run the program from within the repositories main directory.
 
 ### Command Line Arguments
 
