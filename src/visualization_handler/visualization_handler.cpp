@@ -109,7 +109,7 @@ void Visualization_Handler::show_imgui_window ()
                 SPH_COLLISION_FORCE_SPRING_CONSTANT_STEP, SPH_COLLISION_FORCE_SPRING_CONSTANT_MIN, SPH_COLLISION_FORCE_SPRING_CONSTANT_MAX, "%.3f");
             ImGui::DragFloat("force distance tol.", &this->particle_system->collision_force_distance_tolerance, 
                 SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_STEP, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MIN, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MAX, "%.3f");
-            if (ImGui::Button("Reset fluid attributes")) {
+            if (ImGui::Button("Reset collision attributes")) {
                 this->particle_system->reset_collision_attributes();
             }
         }
