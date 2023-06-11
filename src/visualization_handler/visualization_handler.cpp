@@ -65,6 +65,15 @@ bool Visualization_Handler::initialize_shaders ()
     return true;
 }
 
+void Visualization_Handler::delete_shaders ()
+{
+    // Clean up.
+    this->cuboid_shader->delete_program();
+    for (Shader& shader : this->fluid_shaders) {
+        shader.delete_program();
+    }
+}
+
 void Visualization_Handler::change_fluid_visualization ()
 {
     // ...

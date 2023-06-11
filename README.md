@@ -3,6 +3,18 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 
 ![example screenshot](./assets/20230611_screenshot.png)
 
+## Features
+* Real-time fluid simulation using the Smoothed Particles Hydrodynamics method (SPH).
+* Implemented using a spatial grid and multithreading with dynamic spatial partitioning.
+* Graphical user interface for changing the fluids and simulations parameters.
+
+### Features To Do
+* Fluid rendering using the Marching Cubes algorithm.
+* Mouse cursor interaction with particles (apply external force).
+
+## Benchmarking
+to do: graph with different numbers of particles and fps, compare brute force to spatial grid
+
 ## Dependencies
 
 * Graphics Library Framework GLFW Version 3 (glfw3)  
@@ -24,8 +36,7 @@ OpenGL Mathematics (GLM) is a header only C++ mathematics library for graphics s
 Click [here](https://github.com/g-truc/glm) for more informations.
 
 ### Further notes.
-This project uses [Dear ImGui](https://github.com/ocornut/imgui).
-
+This project uses [Dear ImGui](https://github.com/ocornut/imgui). There is no need for installing, the source files are included in this repository.  
 
 ## Installation
 
@@ -52,22 +63,32 @@ If an error occurs while installing the application, make sure, that you have in
 Run the application with `./rtgp_fluid_simulation` within the build directory.  
 Note that because of relative paths for loading the shaders, you cannot run the program from within the repositories main directory.
 
-### Command Line Arguments
-
 ### Key Bindings
+The fluids parameters and some simulation settings can be adapted using the graphical user interface.  
+Further interaction is possible through the keyboard as listed in the key binding list below.  
+
+| Key | Description |
+| :---: | :---: |
+| `ESCAPE` | exit application |
+| `1` | load scene 1 |
+| `2` | load scene 2 |
+| `3` | load scene 3 |
+| `4` | load scene 4 |
+| `5` | load scene 5 |
+| `R` | reload scene |
+| `SPACE` | pause / resume the simulation |
+| `UP` | increase number of particles |
+| `DOWN` | decrease number of particles |
 
 ### Implemented Scenes
 
-
-## Benchmarking
-fps, different amount of particles, ...
-
-## Notes To Do
-- change the C++ types to OpenGL Types (where OpenGL is used)
-- delete shaders at the end
-- everything private that can be private?
-- save termination of the program if the shaders could no be loaded
-- add keys for scene switch depending on number of registered scenes
+| Scene ID | Description |
+| :---: | :---: |
+| `1` | cube in the middle |
+| `2` | cube in the middle (big simulation space) |
+| `3` | dam break scenario |
+| `4` | double dam break scenario |
+| `5` | drop fall scenario |
 
 ## References
 The used method for the fluid simulation is based on the paper ["Particle-based fluid simulation for interactive applications" from Mueller et al.](https://dl.acm.org/doi/10.5555/846276.846298) from 2003.  

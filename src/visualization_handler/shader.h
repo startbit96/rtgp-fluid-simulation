@@ -1,5 +1,6 @@
 #pragma once
 
+#include <GL/glew.h>
 #include <glm/glm.hpp>
 
 #include <string>
@@ -37,7 +38,7 @@ class Shader
         int get_uniform_location (const std::string& name);
 
     public:
-        unsigned int program_id;
+        GLuint program_id;
         bool is_valid;
 
         Shader (const char* filepath_vertex_shader, 

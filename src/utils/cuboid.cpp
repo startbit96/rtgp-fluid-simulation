@@ -27,7 +27,7 @@ Cuboid::Cuboid (float x_min, float x_max, float y_min, float y_max, float z_min,
         glm::vec3 (x_min, y_max, z_max), // 6, front left  top
         glm::vec3 (x_max, y_max, z_max)  // 7, front right top
     };
-    this->indices = std::vector<unsigned int> {
+    this->indices = std::vector<GLuint> {
         0, 1, 2,    // back face triangle 1
         2, 3, 1,    // back face triangle 2
         0, 4, 5,    // bottom face triangle 1

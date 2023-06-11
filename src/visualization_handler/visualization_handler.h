@@ -80,6 +80,7 @@ class Visualization_Handler
         Visualization_Handler ();
 
         bool initialize_shaders ();
+        void delete_shaders ();
         void change_fluid_visualization ();
         void visualize ();
 };

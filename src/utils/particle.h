@@ -1,13 +1,14 @@
 #pragma once
 
+#include <GL/glew.h>
 #include <glm/glm.hpp>
 
 // Particle.
 struct Particle 
 {
     glm::vec3 position;
-    float density;
-    float pressure;
+    GLfloat density;
+    GLfloat pressure;
     glm::vec3 velocity;
     glm::vec3 acceleration;
 };

@@ -29,10 +29,6 @@ void Input::print_information ()
 
 std::string Input::get_key_name (int key)
 {
-    // The function glfwGetKeyName does not work for every key
-    // and also returns the names in lowercase. So its simpler 
-    // to implement it by ourselves instead of making glfwGetKeyName
-    // work for our usecase.
     switch (key) {
         case GLFW_KEY_0: return "0";
         case GLFW_KEY_1: return "1";

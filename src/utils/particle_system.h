@@ -67,7 +67,7 @@
 #define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MAX  0.5f
 #define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_STEP 0.001f
 // Simulation time defines.
-#define SPH_SIMULATION_TIME_STEP                0.05f
+#define SPH_SIMULATION_TIME_STEP                0.03f
 // Multithreading defines.
 #define SIMULATION_NUMBER_OF_THREADS            8
 #define SIMULATION_NUMBER_OF_THREADS_MIN        1

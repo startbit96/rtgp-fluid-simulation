@@ -30,6 +30,7 @@ bool Input_Handler::register_input_context (int context_id, std::string descript
 
 bool Input_Handler::change_input_context (int context_id)
 {
+    // We clear the pressed keys to not transmit old key press evenets to the new context.
     this->clear_pressed_keys();
     if (this->input_contexts.contains(context_id) == true) {
         this->current_context_id = context_id;
@@ -37,6 +38,8 @@ bool Input_Handler::change_input_context (int context_id)
         return true;
     }
     else {
+        // This context id does not exist.
+        std::cout << "ERROR: An input context with the id " << context_id << "does not exist!" << std::endl;
         this->current_context_id = INPUT_HANDLER_CONTEXT_ID_IDLE;
         this->active = false;
         return false;

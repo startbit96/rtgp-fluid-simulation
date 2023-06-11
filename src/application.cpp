@@ -30,6 +30,62 @@ void rtgp_application()
                     application_handler.next_state = APPLICATION_TERMINATION;
                     continue;
                 }
+
+                // Initialize the visualization handler.
+                std::cout << "Initialize visualization handler." << std::endl;
+                if (application_handler.visualization_handler.initialize_shaders() == false) {
+                    // Something went wrong. Terminate the application.
+                    std::cout << "An error occured while loading the shaders." << std::endl;
+                    application_handler.next_state = APPLICATION_TERMINATION;
+                    continue;
+                }
+
+                // Initialize the simulation handler.
+                std::cout << "Initialize simulation handler." << std::endl;
+                // Register the available scenes.
+                // Remember to also add the scene loading to the input handler below.
+                application_handler.simulation_handler.register_new_scene(
+                    "cube in the middle",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f)
+                    }
+                );
+                application_handler.simulation_handler.register_new_scene(
+                    "cube in the middle (big simulation space)",
+                    Cuboid(-3.0f, 3.0f, -1.0f, 3.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-0.5f, 0.5f, 1.5f, 2.5f, -0.5f, 0.5f)
+                    }
+                );
+                application_handler.simulation_handler.register_new_scene(
+                    "dam break scenario",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f)
+                    }
+                );
+                application_handler.simulation_handler.register_new_scene(
+                    "double dam break scenario",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f),
+                        Cuboid(0.5f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f)
+                    }
+                );
+                application_handler.simulation_handler.register_new_scene(
+                    "drop fall scenario",
+                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
+                    std::vector<Cuboid> {
+                        Cuboid(-1.0f, 1.0f, -1.0f, -0.6f, -1.0f, 1.0f),
+                        Cuboid(-0.2f, 0.2f, 0.5f, 0.9f, -0.2f, 0.2f)
+                    }
+                );
+                // Announce the first scene (id = 0) as the next scene to be loaded.
+                // It will be loaded in the SIMULATION_INITIALIZATION state, so we do not need to 
+                // check here if the scene really exists.
+                application_handler.simulation_handler.next_scene_id = 0;
+
                 // Initialize the input handler.
                 std::cout << "Initialize input handler." << std::endl;
                 // Since we can not provide a pointer to a member function, we use a function that calls the member function.
@@ -38,23 +94,24 @@ void rtgp_application()
                 // Currently it would also be enough to just use one context / drop the concept of input context but for future 
                 // development we use the concept of input-contexts.
                 // IDLE (used for everything but the simulation, basically only the reaction for exiting the application).
-                ASSERT(application_handler.input_handler.register_input_context(INPUT_BEHAVIOR_IDLE, "INPUT BEHAVIOR IN SETUP / IDLE MODE:"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_IDLE, GLFW_KEY_ESCAPE, exit_application, "EXIT APPLICATION"));
+                ASSERT( application_handler.input_handler.register_input_context(INPUT_BEHAVIOR_IDLE, "INPUT BEHAVIOR IN SETUP / IDLE MODE:") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_IDLE, GLFW_KEY_ESCAPE, exit_application, "EXIT APPLICATION") );
                 // SIMULATION_RUNNING.
                 // This only contains the reaction to the pressed keyboard keys and not for the interaction with the mouse.
                 // The interaction with the mouse and the resulting rotation / translation of the camera is handled within the visualization_handler.
-                ASSERT(application_handler.input_handler.register_input_context(INPUT_BEHAVIOR_SIMULATION, "INPUT BEHAVIOR DURING SIMULATION:"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_ESCAPE, exit_application, "EXIT APPLICATION"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_1, [] () { switch_scene(0); }, "LOAD SCENE 1"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_2, [] () { switch_scene(1); }, "LOAD SCENE 2"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_3, [] () { switch_scene(2); }, "LOAD SCENE 3"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_4, [] () { switch_scene(3); }, "LOAD SCENE 4"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_5, [] () { switch_scene(4); }, "LOAD SCENE 5"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_R, reload_scene, "RELOAD SCENE"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_DOWN, decrease_number_of_particles, "DECREASE NUMBER OF PARTICLES"));
-                ASSERT(application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_D, change_fluid_visualization, "CHANGE FLUID VISUALIZATION MODE"));
+                ASSERT( application_handler.input_handler.register_input_context(INPUT_BEHAVIOR_SIMULATION, "INPUT BEHAVIOR DURING SIMULATION:") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_ESCAPE, exit_application, "EXIT APPLICATION") );
+                // Add the loading keys for the scenes.
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_1, [] () { switch_scene(0); }, "LOAD SCENE 1") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_2, [] () { switch_scene(1); }, "LOAD SCENE 2") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_3, [] () { switch_scene(2); }, "LOAD SCENE 3") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_4, [] () { switch_scene(3); }, "LOAD SCENE 4") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_5, [] () { switch_scene(4); }, "LOAD SCENE 5") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_R, reload_scene, "RELOAD SCENE") );
+                // Simulation related input.
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_DOWN, decrease_number_of_particles, "DECREASE NUMBER OF PARTICLES") );
                 // Set the callbacks for zoom and rotation (mouse callbacks).
                 glfwSetScrollCallback(application_handler.window, scroll_callback);
                 glfwSetMouseButtonCallback(application_handler.window, mouse_button_callback);
@@ -66,64 +123,14 @@ void rtgp_application()
                     application_handler.next_state = APPLICATION_TERMINATION;
                     continue;
                 }
+                
                 // Print interaction information for the user.
                 application_handler.input_handler.print_information();
-                // Initialize the simulation handler.
-                std::cout << "Initialize simulation handler." << std::endl;
-                // Register the available scenes.
-                application_handler.simulation_handler.register_new_scene(
-                    "Cube in the middle.",
-                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
-                    std::vector<Cuboid> {
-                        Cuboid(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, 0.5f)
-                    }
-                );
-                application_handler.simulation_handler.register_new_scene(
-                    "Cube in the middle (big simulation space).",
-                    Cuboid(-3.0f, 3.0f, -1.0f, 3.0f, -1.0f, 1.0f),
-                    std::vector<Cuboid> {
-                        Cuboid(-0.5f, 0.5f, 1.5f, 2.5f, -0.5f, 0.5f)
-                    }
-                );
-                application_handler.simulation_handler.register_new_scene(
-                    "Dam break scenario.",
-                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
-                    std::vector<Cuboid> {
-                        Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f)
-                    }
-                );
-                application_handler.simulation_handler.register_new_scene(
-                    "Double dam break scenario.",
-                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
-                    std::vector<Cuboid> {
-                        Cuboid(-1.0f, -0.5f, -1.0f, 1.0f, -1.0f, 1.0f),
-                        Cuboid(0.5f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f)
-                    }
-                );
-                application_handler.simulation_handler.register_new_scene(
-                    "Drop fall scenario.",
-                    Cuboid(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f),
-                    std::vector<Cuboid> {
-                        Cuboid(-1.0f, 1.0f, -1.0f, -0.6f, -1.0f, 1.0f),
-                        Cuboid(-0.2f, 0.2f, 0.5f, 0.9f, -0.2f, 0.2f)
-                    }
-                );
-                // Announce the first scene (id = 0) as the next scene to be loaded.
-                // It will be loaded in the SIMULATION_INITIALIZATION state, so we do not need to 
-                // check here if the scene really exists.
-                application_handler.simulation_handler.next_scene_id = 0;
                 // Print informations about the available scenes for the user.
                 application_handler.simulation_handler.print_scene_information();
+
                 // If all went good we arrived here. So the next step is to initialize the simulation.
                 application_handler.next_state = SIMULATION_INITIALIZATION;
-                // Initialize the visualization handler.
-                std::cout << "Initialize visualization handler." << std::endl;
-                if (application_handler.visualization_handler.initialize_shaders() == false) {
-                    // Something went wrong. Terminate the application.
-                    std::cout << "An error occured while loading the shaders." << std::endl;
-                    application_handler.next_state = APPLICATION_TERMINATION;
-                    continue;
-                }
                 break;
             case APPLICATION_TERMINATION:
                 // Terminate the application.
@@ -137,7 +144,8 @@ void rtgp_application()
                 }
                 application_handler.simulation_handler.particle_system.free_gpu_resources();
                 // Delete the shaders.
-                // ...
+                application_handler.visualization_handler.delete_shaders();
+                // Terminate.
                 application_handler.terminate();
                 break;
             case SIMULATION_INITIALIZATION:
@@ -151,7 +159,7 @@ void rtgp_application()
                     continue;
                 }
                 // Activate the input behavior for the simulation.
-                application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_SIMULATION);
+                ASSERT( application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_SIMULATION) );
                 // Load the references into the visualization handler.
                 application_handler.visualization_handler.simulation_space = application_handler.simulation_handler.get_pointer_to_simulation_space();
                 application_handler.visualization_handler.fluid_start_positions = application_handler.simulation_handler.get_pointer_to_fluid_starting_positions();
@@ -169,7 +177,7 @@ void rtgp_application()
                 break;
             case SIMULATION_TERMINATION:
                 // Load the next requested simulation.
-                application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_IDLE);
+                ASSERT( application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_IDLE) );
                 // This application state is only reached when a scene change or a scene reload is requested.
                 // Therefore the only possible next application stage is the initialization of the simulation.
                 application_handler.next_state = SIMULATION_INITIALIZATION;
@@ -233,10 +241,6 @@ void exit_application ()
     application_handler.next_state = APPLICATION_TERMINATION;
 }
 
-void change_fluid_visualization ()
-{
-    application_handler.visualization_handler.change_fluid_visualization();
-}
 
 // Callbacks for the GLFW window.
 

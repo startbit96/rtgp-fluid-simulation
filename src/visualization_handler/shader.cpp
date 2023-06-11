@@ -83,7 +83,10 @@ void Shader::use_program ()
 
 void Shader::delete_program ()
 {
-    GLCall (glDeleteProgram(this->program_id) );
+    if (this->is_valid == true) {
+        GLCall (glDeleteProgram(this->program_id) );
+        this->is_valid = false;
+    }
 }
 
 bool Shader::check_compile_errors (unsigned int shader_id, Shader_Type shader_type)

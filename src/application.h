@@ -22,7 +22,6 @@ void pause_resume_simulation ();
 void increase_number_of_particles ();
 void decrease_number_of_particles ();
 void exit_application ();
-void change_fluid_visualization ();
 // Callbacks for the handling of the zoom and rotation.
 void key_callback (GLFWwindow* window, int key, int scancode, int action, int mods);
 void scroll_callback (GLFWwindow* window, double x_offset, double y_offset);
