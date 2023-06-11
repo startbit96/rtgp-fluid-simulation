@@ -433,9 +433,8 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
             if (j == i) continue;
             glm::vec3 distance_vector = this->particles.at(i).position - this->particles.at(j).position;
             if (glm::length(distance_vector) < this->sph_kernel_radius) {
-                f_pressure += (float)(this->particles.at(i).pressure / pow(this->particles.at(i).density, 2) + 
-                    this->particles.at(j).pressure / pow(this->particles.at(j).density, 2)) *
-                    this->kernel_w_spiky_gradient(distance_vector);
+                f_pressure += ((this->particles.at(i).pressure + this->particles.at(j).pressure) / (2 * this->particles.at(j).density)) *
+                            this->kernel_w_spiky_gradient(distance_vector);
                 f_viscosity += (this->particles.at(j).velocity - this->particles.at(i).velocity) * 
                     this->kernel_w_viscosity_laplacian(distance_vector) / 
                     this->particles.at(j).density;
@@ -445,7 +444,7 @@ void Particle_System::calculate_acceleration_brute_force (unsigned int index_sta
                     this->particles.at(j).density;
             }
         }
-        f_pressure *= -this->sph_particle_mass * this->particles.at(i).density;
+        f_pressure *= -this->sph_particle_mass;
         f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
         color_field_normal *= this->sph_particle_mass;
         this->particles.at(i).normal = -1.0f * color_field_normal;
@@ -638,8 +637,7 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
                     glm::vec3 distance_vector = particle.position - neighbor.position;
                     float distance = glm::length(distance_vector);
                     if (distance < this->sph_kernel_radius) {
-                        f_pressure += (float)(particle.pressure / pow(particle.density, 2) + 
-                            neighbor.pressure / pow(neighbor.density, 2)) *
+                        f_pressure += ((particle.pressure + neighbor.pressure) / (2 * neighbor.density)) *
                             this->kernel_w_spiky_gradient(distance_vector);
                         f_viscosity += (neighbor.velocity - particle.velocity) * 
                             this->kernel_w_viscosity_laplacian(distance_vector) / 
@@ -651,7 +649,7 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
                     }
                 }
             }
-            f_pressure *= -this->sph_particle_mass * particle.density;
+            f_pressure *= -this->sph_particle_mass;
             f_viscosity *= this->sph_particle_mass * this->sph_viscosity;
             color_field_normal *= this->sph_particle_mass;
             particle.normal = -1.0f * color_field_normal;
