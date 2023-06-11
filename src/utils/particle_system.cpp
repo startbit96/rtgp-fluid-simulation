@@ -385,7 +385,8 @@ void Particle_System::parallel_for_grid (void (Particle_System::* function)(unsi
             break;
         }
         // Check if we are now in for the last thread. If so, just assign the task.
-        if (threads.size() == (this->number_of_threads - 1)) {
+        if ((threads.size() == (this->number_of_threads - 1)) || 
+            ((this->number_of_particles - already_assigned_number_of_particles) < evenly_distributed_number_of_particles)) {
             threads.emplace_back(function, this, chunk_start, this->number_of_cells - 1);
             break;
         }
