@@ -17,7 +17,7 @@ Particle_System::Particle_System ()
     this->reset_fluid_attributes();
     this->reset_collision_attributes();
     this->number_of_cells = 0;
-    this->gravity_mode = GRAVITY_NORMAL;
+    this->gravity_mode = GRAVITY_WAVE;
     this->external_forces_active = true;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID;
     this->number_of_threads = SIMULATION_NUMBER_OF_THREADS;
