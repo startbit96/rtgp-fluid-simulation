@@ -44,6 +44,7 @@ Visualization_Handler::Visualization_Handler ()
     this->last_time_stamp = glfwGetTime();
     this->last_time_stamp_fps = this->last_time_stamp;
     this->frame_counter = 0;
+    this->cursor_position = glm::vec2(0.0f);
     
     // The shaders will be initialized later, because we have to wait for 
     // the OpenGL environment to be set up.
@@ -74,16 +75,36 @@ void Visualization_Handler::delete_shaders ()
     }
 }
 
-void Visualization_Handler::change_fluid_visualization ()
+void Visualization_Handler::update_external_force_position ()
 {
-    // ...
+    // This function calculates from the cursors position the ray vector and gives it to the particle system
+    // so for that for every particle the external force can be calculated.
+    // Only do this if the particle system is going to use the data.
+    if (this->particle_system->external_forces_active == true) {
+        // The mouse cursor position are given in pixel values. 
+        // We need them to be in normalized device coordinates ranging from [-1; 1].
+        float normalized_device_coord_x = (2.0f * this->cursor_position.x) / WINDOW_DEFAULT_WIDTH - 1.0f;
+        float normalized_device_coord_y = 1.0f - (2.0f * this->cursor_position.y) / WINDOW_DEFAULT_HEIGHT;
+        // From this we can create the position in clip space. The z-value is -1.
+        glm::vec4 cursor_position_clip = glm::vec4(normalized_device_coord_x, normalized_device_coord_y, -1.0f, 1.0f);
+        // Transform the clip space position to the view space using the inverse projection matrix.
+        glm::mat4 projection_matrix_inverse = glm::inverse(this->projection_matrix);
+        glm::vec4 cursor_position_view = projection_matrix_inverse * cursor_position_clip;
+        cursor_position_view.z = -1.0f;
+        cursor_position_view.w = 0.0f;
+        // Transform the view space position to world space using the inverse view matrix.
+        glm::mat4 view_matrix_inverse = glm::inverse(this->camera.get_view_matrix());
+        glm::vec4 cursor_position_world = view_matrix_inverse * cursor_position_view;
+        glm::vec3 ray_direction = glm::normalize(glm::vec3(cursor_position_world));
+        // Now pass the data to the particle system.
+        this->particle_system->camera_position = this->camera.get_camera_position();
+        this->particle_system->ray_direction_normalized = ray_direction;
+    }
 }
-
-static char textBuffer[256] = "";
 
 void Visualization_Handler::show_imgui_window ()
 {
-    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(600, 600));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(700, 700));
     {
         ImGui::Begin("Settings", NULL);
         // Some visual settings.
@@ -106,6 +127,19 @@ void Visualization_Handler::show_imgui_window ()
             if (ImGui::Button("Reset fluid attributes")) {
                 this->particle_system->reset_fluid_attributes();
             }
+        }
+        // Select the gravity mode.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("Gravity mode")) {
+            for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
+                if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
+                    this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
+            }
+        }
+        // External force attributes.
+        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+        if (ImGui::CollapsingHeader("External force settings")) {
+            ImGui::Checkbox("Enable cursor interaction", &this->particle_system->external_forces_active);
         }
         // Collision attributes.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
@@ -138,17 +172,10 @@ void Visualization_Handler::show_imgui_window ()
                 0.1f, SIMULATION_NUMBER_OF_THREADS_MIN, SIMULATION_NUMBER_OF_THREADS_MAX, 
                 "%d", ImGuiSliderFlags_AlwaysClamp);
         }
-        // Select the gravity mode.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Gravity mode")) {
-            for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
-                if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
-                    this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
-            }
-        }
         ImGui::End();
     }
 }
+
 
 void Visualization_Handler::visualize ()
 {

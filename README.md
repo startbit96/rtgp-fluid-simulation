@@ -1,16 +1,16 @@
 # rtgp-fluid-simulation
 Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time Graphics Programming"](https://www.unimi.it/en/education/degree-programme-courses/2023/real-time-graphics-programming) at the [Università degli Studi di Milano Statale](https://www.unimi.it/en).
 
-![example screenshot](./assets/20230611_screenshot.png)
+![example screenshot](./assets/20230612_screenshot.png)
 
 ## Features
 * Real-time fluid simulation using the Smoothed Particles Hydrodynamics method (SPH).
 * Implemented using a spatial grid and multithreading with dynamic spatial partitioning.
 * Graphical user interface for changing the fluids and simulations parameters.
+* Mouse cursor interaction with particles (apply external force).
 
 ### Features To Do
 * Fluid rendering using the Marching Cubes algorithm.
-* Mouse cursor interaction with particles (apply external force).
 
 ## Benchmarking
 to do: graph with different numbers of particles and fps, compare brute force to spatial grid

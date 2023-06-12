@@ -18,6 +18,7 @@ Particle_System::Particle_System ()
     this->reset_collision_attributes();
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_NORMAL;
+    this->external_forces_active = true;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID;
     this->number_of_threads = SIMULATION_NUMBER_OF_THREADS;
 }
@@ -242,6 +243,43 @@ void Particle_System::change_gravity_mode (Gravity_Mode gravity_mode)
 }
 
 
+// ====================================== EXTERNAL FORCE ==========================================
+
+glm::vec3 Particle_System::get_external_force (Particle& particle)
+{
+    if (this->external_forces_active == false) {
+        return glm::vec3(0.0f);
+    }
+    else {
+        // Calculate the relative vector from the camera to the particle.
+        glm::vec3 camera_to_particle = particle.position - this->camera_position;
+        // Check if the particle is behind the camera. In the currently implemented scenes this is 
+        // not possible since the zoom level is restricted. But who knows what scenes will come in 
+        // the future so check it anyway.
+        if (glm::dot(camera_to_particle, this->ray_direction_normalized) < 0.0f) {
+            // The particle is behind the camera. We will apply no force to this particle.
+            return glm::vec3(0.0f);
+        }
+        // Calculate the perpendicular vector of the two vectors. Its length is also the area of the
+        // spanned parallelogram by the camera_to_particle and the ray_direction vector. Since the 
+        // ray direction is normalized, the distance between the particle and the line created by
+        // the cameras position and the ray vector is equal to the length of the perpendicular vector.
+        glm::vec3 perpendicular_vector = glm::cross(this->ray_direction_normalized, camera_to_particle);
+        float distance = glm::length(perpendicular_vector);
+        // We only apply the force to particles within a given distance to the ray.
+        if (distance > SPH_EXTERNAL_FORCE_RADIUS) {
+            return glm::vec3(0.0f);
+        }
+        // For the particles that are in the given radius we need to find the direction we will set
+        // the external force. This is given by the cross product of the perpendicular vector and the 
+        // ray direction of the mouse cursor. Both need to be normalized so that the resulting vector
+        // has the length 1 and can be multiplied by the desired force magnitude.
+        glm::vec3 force_direction = glm::cross(glm::normalize(perpendicular_vector), this->ray_direction_normalized);
+        return force_direction * SPH_EXTERNAL_FORCE_MAGNITUDE;
+    }
+}
+
+
 // ====================================== COLLISION HANDLING ======================================
 
 void Particle_System::resolve_collision_relfexion_method (Particle& particle)
@@ -277,7 +315,7 @@ void Particle_System::resolve_collision_relfexion_method (Particle& particle)
     }
 }
 
-glm::vec3 Particle_System::resolve_collision_force_method (Particle particle)
+glm::vec3 Particle_System::resolve_collision_force_method (Particle& particle)
 {
     // This method applies an force to a particle if its to near the border.
     // It is basically a spring damper system.
@@ -600,7 +638,7 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
 {
     // The index does now not refer to the index in the particles vector but to a grid cell.
     // Calculate the forces for each particle in a cell independently.
-    glm::vec3 f_external = this->get_gravity_vector();
+    glm::vec3 f_gravity = this->get_gravity_vector();
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
         if (this->spatial_grid.at(idx_cell).size() == 0) {
             // No particles in this cell.
@@ -615,6 +653,7 @@ void Particle_System::calculate_acceleration_spatial_grid (unsigned int index_st
         for (Particle& particle : this->spatial_grid.at(idx_cell)) {
             glm::vec3 f_pressure(0.0f);
             glm::vec3 f_viscosity(0.0f);
+            glm::vec3 f_external = f_gravity + this->get_external_force(particle);
             // Look in all neighboring cells (this includes also the current cell).
             for (int idx_neighbor_cell: neighboring_cells_indices) {
                 // Look at all the particles in these neighboring cells.

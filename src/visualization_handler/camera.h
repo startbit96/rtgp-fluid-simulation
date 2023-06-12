@@ -38,5 +38,6 @@ class Camera
 
         void zoom (float zoom_offset);
         void rotate (float new_cursor_position_x, float new_cursor_position_y);
+        glm::vec3 get_camera_position ();
         glm::mat4 get_view_matrix ();
 };

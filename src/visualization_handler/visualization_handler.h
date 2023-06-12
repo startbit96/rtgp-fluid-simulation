@@ -79,8 +79,19 @@ class Visualization_Handler
 
         Visualization_Handler ();
 
+        // For external forces we need to know where the mouse cursor is at any time so
+        // we can also call the update function below at any time.
+        glm::vec2 cursor_position;
+        // This function does two things. First, it gives the particle system the position
+        // of the camera. Second, it calculates based on the x and y positions of the cursor
+        // a ray (vector) where the mouse cursor is pointing using the inverse of the view and 
+        // projection matrices.
+        void update_external_force_position ();
+
+        // Shader related functions.
         bool initialize_shaders ();
         void delete_shaders ();
-        void change_fluid_visualization ();
+
+        // Visualize everything (particles, simulation space, imgui window, ...).
         void visualize ();
 };

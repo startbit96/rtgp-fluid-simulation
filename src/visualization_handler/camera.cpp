@@ -71,26 +71,27 @@ void Camera::rotate (float new_cursor_position_x, float new_cursor_position_y)
     this->old_cursor_position_y = new_cursor_position_y;
 }
 
-glm::mat4 Camera::get_view_matrix () 
+glm::vec3 Camera::get_camera_position ()
 {
-    // Calculate the position of the camera based on yaw and pitch.
-    glm::vec3 camera_position (
+    // Calculate the normalized camera position vector, multiply it by the
+    // zoom level and move it according to the scene scenter.
+    return glm::vec3 (
         cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch)),
         sin(glm::radians(this->pitch)),
         sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch))
-    );
-    // Currently the position vector is normalized. To get to the real position,
-    // also use the zoom level.
-    camera_position = camera_position * this->zoom_level;
+    ) * this->zoom_level + this->scene_center;
+}
+
+glm::mat4 Camera::get_view_matrix () 
+{
+    // Calculate the position of the camera based on yaw and pitch.
+    glm::vec3 camera_position = this->get_camera_position();
     // Calculate the view vector. Therefore normalize and invert the direction.
     glm::vec3 view_vector = glm::normalize(-camera_position);
     // We also need the view up vector, calculate it using the cross product.
     glm::vec3 world_up = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     glm::vec3 view_right = glm::normalize(glm::cross(view_vector, world_up));
     glm::vec3 view_up = glm::normalize(glm::cross(view_right, view_vector));  
-    // Currently the camera position is in local coordinates, we want it in global ones,
-    // so add the scene center to the camera position.
-    camera_position = camera_position + this->scene_center;
     return glm::lookAt(
         camera_position, 
         camera_position + view_vector, 

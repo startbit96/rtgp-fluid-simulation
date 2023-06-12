@@ -170,6 +170,9 @@ void rtgp_application()
                 application_handler.next_state = SIMULATION_RUNNING;
                 break;
             case SIMULATION_RUNNING:
+                // For the users interaction with the fluid, the particle system needs to know the cameras position and the ray
+                // casted by the mouse cursor. Update these values.
+                application_handler.visualization_handler.update_external_force_position();
                 // Calculate the next simulation step.
                 application_handler.simulation_handler.simulate();
                 // Update the visualization.
@@ -300,4 +303,7 @@ void cursor_position_callback(GLFWwindow* window, double x_pos, double y_pos)
     // continue if the mouse hovers over the imgui window.
     ImGui_ImplGlfw_CursorPosCallback(window, x_pos, y_pos);
     application_handler.visualization_handler.camera.rotate(x_pos, y_pos);
+    // Needed for applying external forces using the mouse:
+    application_handler.visualization_handler.cursor_position.x = x_pos;
+    application_handler.visualization_handler.cursor_position.y = y_pos;
 }

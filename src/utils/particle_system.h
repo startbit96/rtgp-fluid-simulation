@@ -46,6 +46,9 @@
 // Gravity mode defines.
 #define SPH_GRAVITY_MAGNITUDE                   9.8f
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
+// External force defines.
+#define SPH_EXTERNAL_FORCE_RADIUS               0.2f
+#define SPH_EXTERNAL_FORCE_MAGNITUDE            100.0f
 // Collision handling.
 #define SPH_COLLISION_REFLEXION_DAMPING             0.5f
 #define SPH_COLLISION_REFLEXION_DAMPING_MIN         0.0f
@@ -152,9 +155,12 @@ class Particle_System
         // Returns the gravity vector based on the selected gravity mode.
         glm::vec3 get_gravity_vector ();
 
+        // Returns the external force vector created by the users cursor.
+        glm::vec3 get_external_force (Particle& particle);
+
         // Collision handling.
         void resolve_collision_relfexion_method (Particle& particle);
-        glm::vec3 resolve_collision_force_method (Particle particle);
+        glm::vec3 resolve_collision_force_method (Particle& particle);
 
         // Multithreading.
         void parallel_for (void (Particle_System::* function)(unsigned int, unsigned int), int number_of_elements);
@@ -230,6 +236,12 @@ class Particle_System
         Gravity_Mode gravity_mode;
         void next_gravity_mode ();
         void change_gravity_mode (Gravity_Mode gravity_mode);
+
+        // For external forces applied by the users mouse cursor. These values are 
+        // updated by the visualization
+        bool external_forces_active;
+        glm::vec3 camera_position;
+        glm::vec3 ray_direction_normalized;
 
         // Change the computation mode (either brute force or with spatial hash grid).
         Computation_Mode computation_mode;
