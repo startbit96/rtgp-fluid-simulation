@@ -1,67 +1,43 @@
 #include "marching_cubes.h"
 
+#include <string>
 #include <thread>
 
 #include "../utils/debug.h"
 #include "../utils/helper.h"
 
+
+// ====================================== MARCHING CUBES GENERATOR ======================================
+
 Marching_Cubes_Generator::Marching_Cubes_Generator ()
 {
     this->vertex_array_object = 0;
     this->cube_edge_length = -1.0f;
-    this->new_cube_edge_length = this->cube_edge_length;
-}
-
-
-// ====================================== INITIALIZATION FUNCTIONS ======================================
-
-void Marching_Cubes_Generator::calculate_number_of_grid_cells ()
-{
-    // We add one cube row before and one cube behind the simulation space to have good surfaces.
-    this->number_of_cells_x = ceil((this->simulation_space->x_max - this->simulation_space->x_min) / 
-        this->cube_edge_length) + 2;
-    this->number_of_cells_y = ceil((this->simulation_space->y_max - this->simulation_space->y_min) / 
-        this->cube_edge_length) + 2;
-    this->number_of_cells_z = ceil((this->simulation_space->z_max - this->simulation_space->z_min) / 
-        this->cube_edge_length) + 2;
-    this->number_of_cells = this->number_of_cells_x * this->number_of_cells_y * this->number_of_cells_z;
-    // Resize the mutex vector.
-    // Iterate over each element in the vector and assign a newly created std::mutex using std::make_unique.
-    this->mutex_spatial_grid.clear();
-    this->mutex_spatial_grid.resize(this->number_of_cells);
-    for (auto& mutex : this->mutex_spatial_grid) {
-        mutex = std::make_unique<std::mutex>();
-    }
-}
-
-void Marching_Cubes_Generator::set_simulation_space (Cuboid* simulation_space)
-{
-    this->simulation_space = simulation_space;
-    // Reset the grid cell edge length so that the vectors have to be recalculated the next time.
-    this->cube_edge_length = -1.0f;
+    this->new_cube_edge_length = MARCHING_CUBES_CUBE_EDGE_LENGTH;
+    this->number_of_cells = 0;
 }
 
 
 // ====================================== MULTITHREADING ======================================
 
-void Marching_Cubes_Generator::parallel_for (void (Marching_Cubes_Generator::* function)(unsigned int, unsigned int), int number_of_elements, unsigned int number_of_threads)
+void Marching_Cubes_Generator::parallel_for (void (Marching_Cubes_Generator::* function)(unsigned int, unsigned int), int number_of_elements)
 {
     // Create threads and execute the desired function in chunks.
     // Calculate the chunk size (it depends whether we operate on the particles vector itself or the spatial grid).
-    if (number_of_threads == 1) {
+    if (this->particle_system->number_of_threads == 1) {
         // Just execute the function if only one thread is desired.
         (this->*function)(0, number_of_elements - 1);
         return;
     }
-    int chunk_size = number_of_elements / number_of_threads;
+    int chunk_size = number_of_elements / this->particle_system->number_of_threads;
     std::vector<std::thread> threads;
-    threads.reserve(number_of_threads);
+    threads.reserve(this->particle_system->number_of_threads);
     // Create the threads.
-    for (int i = 0; i < number_of_threads; i++) {
+    for (int i = 0; i < this->particle_system->number_of_threads; i++) {
         int chunk_start = i * chunk_size;
         int chunk_end = chunk_start + chunk_size - 1;
         // The last chunk goes until the end of the vector.
-        if (i == number_of_threads - 1) {
+        if (i == this->particle_system->number_of_threads - 1) {
             chunk_end = number_of_elements - 1;
         }
         // With the following call we not only append the thread to the vector but with 
@@ -74,53 +50,132 @@ void Marching_Cubes_Generator::parallel_for (void (Marching_Cubes_Generator::* f
     }
 }
 
-void Marching_Cubes_Generator::parallel_for_grid (void (Marching_Cubes_Generator::* function)(unsigned int, unsigned int), unsigned int number_of_threads)
+
+// ====================================== INITIALIZATION FUNCTIONS ======================================
+
+void Marching_Cubes_Generator::calculate_number_of_grid_cells ()
 {
-    // The parallel_for_grid function works not on a vector of particles but on the grid. 
-    // On the grid we do not know if the particles are evenly distributed over the whole simulation space
-    // (they are most likely not), so we have to dynamically assign the chunks based on the number of particles
-    // in the grid cells.
-    // Create threads and execute the desired function in chunks.
-    // Calculate the chunk size not on the number of grid cells (evenly), but on the number of particles.
-    if (number_of_threads == 1) {
-        // Just execute the function if only one thread is desired.
-        (this->*function)(0, this->number_of_cells - 1);
-        return;
+    // We add one cube row before and one cube behind the simulation space to have good surfaces.
+    this->number_of_cells_x = ceil((this->particle_system->simulation_space->x_max - this->particle_system->simulation_space->x_min) / 
+        this->cube_edge_length) + 2;
+    this->number_of_cells_y = ceil((this->particle_system->simulation_space->y_max - this->particle_system->simulation_space->y_min) / 
+        this->cube_edge_length) + 2;
+    this->number_of_cells_z = ceil((this->particle_system->simulation_space->z_max - this->particle_system->simulation_space->z_min) / 
+        this->cube_edge_length) + 2;
+    this->number_of_cells = this->number_of_cells_x * this->number_of_cells_y * this->number_of_cells_z;
+    // The marching cubes information need also to be reset.
+    this->marching_cubes.clear();
+    this->marching_cubes.resize(this->number_of_cells);
+    // Resize the mutex vector.
+    // Iterate over each element in the vector and assign a newly created std::mutex using std::make_unique.
+    this->mutex_spatial_grid.clear();
+    this->mutex_spatial_grid.resize(this->number_of_cells);
+    for (auto& mutex : this->mutex_spatial_grid) {
+        mutex = std::make_unique<std::mutex>();
     }
-    int evenly_distributed_number_of_particles = this->number_of_particles / number_of_threads;
-    std::vector<std::thread> threads;
-    threads.reserve(number_of_threads);
-    // Create the threads.
-    int chunk_number_of_particles = 0;
-    int already_assigned_number_of_particles = 0;
-    int chunk_start = 0;
-    int chunk_end;
-    for (int idx_cell = 0; idx_cell < this->number_of_cells; idx_cell++) {
-        chunk_number_of_particles += this->spatial_grid.at(idx_cell).size();
-        if (chunk_number_of_particles >= evenly_distributed_number_of_particles) {
-            chunk_end = idx_cell;
-            threads.emplace_back(function, this, chunk_start, chunk_end);
-            chunk_start = idx_cell + 1;
-            already_assigned_number_of_particles += chunk_number_of_particles;
-            chunk_number_of_particles = 0;
-        }
-        // Check if the number of particles is already reached (this can be if the particles are really near to each other).
-        // If so, break.
-        if (already_assigned_number_of_particles == this->number_of_particles) {
-            break;
-        }
-        // Check if we are now in for the last thread. If so, just assign the task.
-        // It can also be that the particles are so unevenly distributed that e.g. after 6/8 threads most of 
-        // the particles are assigned to the threads and a seventh one would not be filled up completely. Check this case too.
-        if ((threads.size() == (number_of_threads - 1)) || 
-            ((this->number_of_particles - already_assigned_number_of_particles) < evenly_distributed_number_of_particles)) {
-            threads.emplace_back(function, this, chunk_start, this->number_of_cells - 1);
-            break;
-        }
+    // The recalculation of the grid cells / cubes also demands the resetting of the vbo, ibo and vao since
+    // the number of cubes changed.
+
+    // Clear the buffers if there is something to clear.
+    this->free_gpu_resources();
+
+    // Generate the OpenGL buffers for the particle system.
+    GLCall( glGenVertexArrays(1, &this->vertex_array_object) );
+    GLCall( glGenBuffers(1, &this->vertex_buffer_object) );
+    GLCall( glGenBuffers(1, &this->index_buffer_object) );
+
+    // Make vertex array object active.  
+    GLCall( glBindVertexArray(this->vertex_array_object) );
+
+    // Copy the data into the vertex buffer object.
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
+    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(Marching_Cube) * this->number_of_cells, &this->marching_cubes.at(0), GL_STATIC_DRAW) );
+
+    // Copy the indices into the index buffer object.
+    GLCall( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->index_buffer_object) );
+    this->indices.clear();
+    for (unsigned int i = 0; i < this->number_of_cells; i++) {
+        this->indices.push_back(i);
     }
-    // Wait for the threads to finish.
-    for (auto& thread : threads) {
-        thread.join();
+    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_cells, &this->indices.at(0), GL_STATIC_DRAW) );
+
+    // Describe the vertex buffer layout of a marching cube.
+    unsigned int index = 0;
+    // Position of the corner.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)0) );
+    index++;
+    // Number of particles.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, number_of_particles_within))) );
+    index++;
+    // Vertex values.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, vertex_values))) );
+    index++;
+
+    // Unbind.
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+    GLCall( glBindVertexArray(0) );
+}
+
+inline int Marching_Cubes_Generator::discretize_value (float value)
+{
+    // The cells of our grid have the edge length of the marching cubes.
+    return (int)floor(value / this->cube_edge_length);
+}
+
+inline int Marching_Cubes_Generator::get_grid_key (glm::vec3 position)
+{
+    // We move the particles position into positive values and also a little bit more because we have 
+    // the outer cubes.
+    position = position + this->particle_system->particle_offset + glm::vec3(this->cube_edge_length);
+    // Check if the position is within the grids volume.
+    if ((position.x < 0.0f) || (position.x > this->number_of_cells_x * this->cube_edge_length) ||
+        (position.y < 0.0f) || (position.y > this->number_of_cells_y * this->cube_edge_length) ||
+        (position.z < 0.0f) || (position.z > this->number_of_cells_z * this->cube_edge_length)) {
+            return -1;
+    }
+    return
+        (Marching_Cubes_Generator::discretize_value(position.x)) +
+        (Marching_Cubes_Generator::discretize_value(position.y) * this->number_of_cells_x) +
+        (Marching_Cubes_Generator::discretize_value(position.z) * this->number_of_cells_x * this->number_of_cells_y);
+}
+
+
+inline glm::vec3 Marching_Cubes_Generator::get_min_corner_from_grid_key (int grid_key)
+{
+    // Get the position index values in respective to the x, y and z coordinates.
+    int cell_index_x = grid_key % this->number_of_cells_x;
+    int cell_index_y = (grid_key / this->number_of_cells_x) % this->number_of_cells_y;
+    int cell_index_z = grid_key / (this->number_of_cells_x * this->number_of_cells_y);
+    // From this calculate the position.
+    glm::vec3 position = glm::vec3(
+        cell_index_x * this->cube_edge_length,
+        cell_index_y * this->cube_edge_length,
+        cell_index_z * this->cube_edge_length
+    );
+    // We need to translate the position back to the global coordinates since we moved the position to
+    // only allow position values.
+    position = position - this->particle_system->particle_offset - glm::vec3(this->cube_edge_length);
+    return position;
+}
+
+
+void Marching_Cubes_Generator::set_cube_position (unsigned int index_start, unsigned int index_end) 
+{
+    for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
+        this->marching_cubes.at(idx_cell).corner_min = this->get_min_corner_from_grid_key(idx_cell);
+    }
+}
+
+void Marching_Cubes_Generator::reset_cube_informations (unsigned int index_start, unsigned int index_end)
+{
+    for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
+        // Reset the number of particles within the cube.
+        this->marching_cubes.at(idx_cell).number_of_particles_within = 0;
+        // Reset the vertex values.
+        memset(this->marching_cubes.at(idx_cell).vertex_values, 0, sizeof(this->marching_cubes.at(idx_cell).vertex_values));
     }
 }
 
@@ -131,10 +186,10 @@ void Marching_Cubes_Generator::simulation_space_changed ()
 {
     // To inform the "generate_marching_cubes" function that a resizing of the spatial grid is needed, we simply
     // set the cube_edge_length to a negative value, because this will trigger the recalculation.
-    this->cube_edge_lenght = -1.0f;
+    this->cube_edge_length = -1.0f;
 }
 
-void Marching_Cubes_Generator::generate_marching_cubes (std::vector<Particle>& particles, unsigned int number_of_threads)
+void Marching_Cubes_Generator::generate_marching_cubes ()
 {
     // Check if the new resolution is different from before. If so, also resize the mutex vector.
     if (this->new_cube_edge_length < 0.0f) {
@@ -146,13 +201,18 @@ void Marching_Cubes_Generator::generate_marching_cubes (std::vector<Particle>& p
         // This call also resizes the mutex vector, therefore it makes sense to only do it if the values changed.
         this->cube_edge_length = this->new_cube_edge_length;
         this->calculate_number_of_grid_cells();
+        // The marching cubes vector was resized and refilled with empty marching cubes. These no longer hold
+        // information about their position in space, so we need to update this once.
+        this->parallel_for(&Marching_Cubes_Generator::set_cube_position, this->number_of_cells);
+        // Since we cleared the whole marching cubes grid we do not need to reset the information stored within these
     }
-    // Clear the previous the grid.
-    this->spatial_grid.clear();
-    // Create the spatial grid based on the particles in the particle system.
-    // To approximate the density of a cell we will use the amount of particles within this cell.
-    // Therefore the spatial grid has no particles in it but only an unsigned int value representing the 
-    // number of particles that would fall into this grid.
+    else {
+        // The marching cubes vector does not need to be resized so we can keep him.
+        // The vector still holds the information about the position of each marching cube.
+        // But the vector also still holds the information about the number of particles within each cube as well
+        // as the vertice attributes. So we need to reset these.
+        this->parallel_for(&Marching_Cubes_Generator::reset_cube_informations, this->number_of_cells);
+    }
     
 
 }
@@ -165,8 +225,13 @@ void Marching_Cubes_Generator::generate_marching_cubes (std::vector<Particle>& p
 // structure for drawing the grid used. Therefore we will simply load another shader.
 void Marching_Cubes_Generator::draw (bool unbind)
 {
+    // Update the marching cubes data in the vertex buffer object.
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
+    GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Marching_Cube) * this->number_of_cells, &this->marching_cubes.at(0)) );
+    GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+    // Draw the marching cubes using the vertex array object.
     GLCall( glBindVertexArray(this->vertex_array_object) );
-    GLCall( glDrawElements(GL_TRIANGLES, this->indices.size(), GL_UNSIGNED_INT, 0) );
+    GLCall( glDrawElements(GL_POINTS, this->number_of_cells, GL_UNSIGNED_INT, 0) );
     // In order to save a few unbind-calls, do this only if neccessary. 
     // In our case, the visualization handler will handle the unbinding, so normally we will not unbind here.
     if (unbind == true) {
@@ -180,10 +245,5 @@ void Marching_Cubes_Generator::free_gpu_resources ()
         GLCall( glDeleteVertexArrays(1, &this->vertex_array_object) );
         GLCall( glDeleteBuffers(1, &this->vertex_buffer_object) );
         GLCall( glDeleteBuffers(1, &this->index_buffer_object) );
-    }
-    if (this->vertex_array_object_grid > 0) {
-        GLCall( glDeleteVertexArrays(1, &this->vertex_array_object_grid) );
-        GLCall( glDeleteBuffers(1, &this->vertex_buffer_object_grid) );
-        GLCall( glDeleteBuffers(1, &this->index_buffer_object_grid) );
     }
 }

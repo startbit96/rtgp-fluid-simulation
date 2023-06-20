@@ -164,6 +164,8 @@ void rtgp_application()
                 application_handler.visualization_handler.simulation_space = application_handler.simulation_handler.get_pointer_to_simulation_space();
                 application_handler.visualization_handler.fluid_start_positions = application_handler.simulation_handler.get_pointer_to_fluid_starting_positions();
                 application_handler.visualization_handler.particle_system = application_handler.simulation_handler.get_pointer_to_particle_system();
+                application_handler.visualization_handler.marching_cube_generator.particle_system = application_handler.simulation_handler.get_pointer_to_particle_system();
+                application_handler.visualization_handler.marching_cube_generator.simulation_space_changed();
                 // Set the point of interest for the camera.
                 application_handler.visualization_handler.camera.scene_center = application_handler.simulation_handler.get_current_point_of_interest();
                 // The next state will be the running simulation.

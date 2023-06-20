@@ -139,7 +139,6 @@ class Particle_System
         float particle_initial_distance;
         float sph_kernel_radius;
         unsigned int simulation_step;
-        Cuboid* simulation_space;
 
         // Calculates the kernels radius based on the initial distance of the particles.
         void calculate_kernel_radius ();
@@ -184,7 +183,8 @@ class Particle_System
         void simulate_brute_force ();
 
         // Implementation using a spatial grid.
-        glm::vec3 particle_offset;
+        // Note that we also have the particle_offset value but since we need it in the marching cubes
+        // class we will make it public, so see below.
         int number_of_cells;
         int number_of_cells_x;
         int number_of_cells_y;
@@ -213,6 +213,10 @@ class Particle_System
         std::string number_of_particles_as_string;
 
         Particle_System ();
+
+        // Spatial grid related variables. This needs to be public to be read by the marching cubes algorithm.
+        Cuboid* simulation_space;
+        glm::vec3 particle_offset;
 
         // This function creates the initial particles based on the given spaces that have
         // to be filled an the particle_initial_distance.

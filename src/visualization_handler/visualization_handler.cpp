@@ -29,6 +29,9 @@ Visualization_Handler::Visualization_Handler ()
     );
     this->draw_simulation_space = true;
     this->draw_fluid_starting_positions = true;
+    this->draw_particles = true;
+    this->draw_marching_cubes_surface = false;
+    this->draw_marching_cubes_grid = true;
     this->color_simulation_space = glm::vec4(
         SIMULATION_SPACE_COLOR_R,
         SIMULATION_SPACE_COLOR_G,
@@ -61,7 +64,18 @@ bool Visualization_Handler::initialize_shaders ()
     this->fluid_shaders = std::vector<Shader> {
         Shader("../shaders/particle.vert", "../shaders/particle.frag", "../shaders/particle.geom")
     };
+    for (Shader& shader : this->fluid_shaders) {
+        if (shader.is_valid == false) {
+            return false;
+        }
+    }
     this->current_fluid_shader = 0;
+    // Shader for the grid of the marching cubes algorithm.
+    this->marching_cube_grid_shader = new Shader("../shaders/marching_cube_grid.vert", "../shaders/marching_cube_grid.frag", 
+        "../shaders/marching_cube_grid.geom");
+    if (this->marching_cube_grid_shader->is_valid == false) {
+        return false;
+    }
     // If we arrive here, all shaders were read in successfully.
     return true;
 }
@@ -110,8 +124,13 @@ void Visualization_Handler::show_imgui_window ()
         // Some visual settings.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::CollapsingHeader("Visual settings")) {
-            ImGui::Checkbox("Show simulation space", &this->draw_simulation_space);
-            ImGui::Checkbox("Show initial fluid position", &this->draw_fluid_starting_positions);
+            ImGui::Checkbox("show simulation space", &this->draw_simulation_space);
+            ImGui::Checkbox("show initial fluid position", &this->draw_fluid_starting_positions);
+            ImGui::Checkbox("show particles", &this->draw_particles);
+            ImGui::Checkbox("show marching cube surface", &this->draw_marching_cubes_surface);
+            ImGui::Checkbox("show marching cube grid", &this->draw_marching_cubes_grid);
+            ImGui::DragFloat("marching cube grid size", &this->marching_cube_generator.new_cube_edge_length, 
+                MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP, MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN, MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX, "%.4f");
         }
         // Fluid attributes.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
@@ -124,7 +143,7 @@ void Visualization_Handler::show_imgui_window ()
                 SPH_GAS_CONSTANT_STEP, SPH_GAS_CONSTANT_MIN, SPH_GAS_CONSTANT_MAX, "%.9f");
             ImGui::DragFloat("viscosity", &this->particle_system->sph_viscosity, 
                 SPH_VISCOSITY_STEP, SPH_VISCOSITY_MIN, SPH_VISCOSITY_MAX, "%.6f");
-            if (ImGui::Button("Reset fluid attributes")) {
+            if (ImGui::Button("reset fluid attributes")) {
                 this->particle_system->reset_fluid_attributes();
             }
         }
@@ -239,23 +258,42 @@ void Visualization_Handler::visualize ()
             this->fluid_start_positions->at(i).draw();
         }
     }
+    // Undo some things that need to be undone one of the cuboids were drawn.
+    if ((this->draw_simulation_space == true)|| (this->draw_fluid_starting_positions == true)) {
+        // Deactivate wireframe mode.
+        GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
+    }
 
     // Visualize the particles.
-    // Deactivate wireframe mode.
-    GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
-    // Activate the desired shader program.
-    this->fluid_shaders[this->current_fluid_shader].use_program();
-    // Set the projection matrix and the view matrix.
-    this->fluid_shaders[this->current_fluid_shader].set_uniform_mat4fv("u_projection_matrix", this->projection_matrix);
-    this->fluid_shaders[this->current_fluid_shader].set_uniform_mat4fv("u_view_matrix", view_matrix);
-    // Set the aspect ratio.
-    this->fluid_shaders[this->current_fluid_shader].set_uniform_1f("u_aspect_ratio", this->aspect_ratio);
-    // Draw the particles.
-    this->particle_system->draw();
+    if (this->draw_particles == true) {
+        // Activate the desired shader program.
+        this->fluid_shaders[this->current_fluid_shader].use_program();
+        // Set the projection matrix and the view matrix.
+        this->fluid_shaders[this->current_fluid_shader].set_uniform_mat4fv("u_projection_matrix", this->projection_matrix);
+        this->fluid_shaders[this->current_fluid_shader].set_uniform_mat4fv("u_view_matrix", view_matrix);
+        // Set the aspect ratio.
+        this->fluid_shaders[this->current_fluid_shader].set_uniform_1f("u_aspect_ratio", this->aspect_ratio);
+        // Draw the particles.
+        this->particle_system->draw();
+    }
+
+    // Visualize the marching cubes grid.
+    if (this->draw_marching_cubes_grid == true) {
+        // Calculate the marching cubes.
+        this->marching_cube_generator.generate_marching_cubes();
+        // Activate the desired shader program.
+        this->marching_cube_grid_shader->use_program();
+        // Set the projection matrix and the view matrix.
+        this->marching_cube_grid_shader->set_uniform_mat4fv("u_projection_matrix", this->projection_matrix);
+        this->marching_cube_grid_shader->set_uniform_mat4fv("u_view_matrix", view_matrix);
+        // Set the cubes edge length.
+        this->marching_cube_grid_shader->set_uniform_1f("u_cube_edge_length", this->marching_cube_generator.cube_edge_length);
+        // Draw the grid.
+        this->marching_cube_generator.draw();
+    }
 
     // Unbind.
     GLCall( glBindVertexArray(0) );
-
 
     // Set up and draw the imgui window.
     // Start the Dear ImGui frame.

@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "../utils/cuboid.h"
 #include "../utils/particle_system.h"
+#include "marching_cubes.h"
 
 // Project related defines.
 #define WINDOW_DEFAULT_NAME         "RTGP - Fluid Simulation"
@@ -47,12 +48,27 @@ class Visualization_Handler
         // the execution of the program. Therefore save them in a vector.
         std::vector<Shader> fluid_shaders;
         unsigned int current_fluid_shader;
+        // The shader for the marching cubes grid.
+        Shader* marching_cube_grid_shader;
         // The projection matrix. It will use the values defined above in the define section.
         float aspect_ratio;
         glm::mat4 projection_matrix;
         // Some settings regarding what has to be drawn and what.
+        // Note that if the drawing of the marching cubes is not wanted, they are not calculated,
+        // what means, the computational costs sink and the fps will rise. Note that we do not differ between 
+        // the surface drawing or the grid drawing. As long one of these are desired to be drawn, the marching
+        // cubes are calculated.
+        // This does not apply to the particles. If they shall not be drawn, the will simply not be drawn but they will
+        // be simulated by the simulation handler. This has two reasons: First, the visualization handler
+        // is not in charge of the simulation handler that calculates this simulation and also if the 
+        // marching cubes shall be visualized but not the particles, the marching cubes still need the 
+        // updated particles positions.
+        // To pause the simulation use the function provided by the simulation handler.
         bool draw_simulation_space;
         bool draw_fluid_starting_positions;
+        bool draw_particles;
+        bool draw_marching_cubes_surface;
+        bool draw_marching_cubes_grid;
         // Color settings.
         glm::vec4 color_simulation_space;
         glm::vec4 color_fluid_starting_positions;
@@ -76,6 +92,9 @@ class Visualization_Handler
         // Our camera that handles the calculation of the view matrix.
         // It is an arc ball camera.
         Camera camera;
+
+        // Marching cubes generator.
+        Marching_Cubes_Generator marching_cube_generator;
 
         Visualization_Handler ();
 
