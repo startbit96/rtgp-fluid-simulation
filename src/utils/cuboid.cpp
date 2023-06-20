@@ -5,7 +5,7 @@
 
 Cuboid::Cuboid ()
 {
-    
+    this->vertex_array_object = 0;
 }
 
 Cuboid::Cuboid (float x_min, float x_max, float y_min, float y_max, float z_min, float z_max)

@@ -48,6 +48,9 @@
 #define GRAVITY_MODE_ROT_SWITCH_TIME            200
 // External force defines.
 #define SPH_EXTERNAL_FORCE_RADIUS               0.2f
+#define SPH_EXTERNAL_FORCE_RADIUS_MIN           0.05f
+#define SPH_EXTERNAL_FORCE_RADIUS_MAX           1.0f
+#define SPH_EXTERNAL_FORCE_RADIUS_STEP          0.01f
 #define SPH_EXTERNAL_FORCE_MAGNITUDE            100.0f
 // Collision handling.
 #define SPH_COLLISION_REFLEXION_DAMPING             0.5f
@@ -97,6 +100,13 @@ inline const char* to_string (Gravity_Mode gravity_mode)
         default:                return "unknown gravity mode";
     }
 }
+
+// We also need to know in what direction the external force introduced by
+// the mouse cursor is supposed to be applied.
+enum External_Force_Direction {
+    EXTERNAL_FORCE_REPELLENT,
+    EXTERNAL_FORCE_ATTRACTIVE
+};
 
 // What calculation mode to use?
 enum Computation_Mode
@@ -240,6 +250,11 @@ class Particle_System
         // For external forces applied by the users mouse cursor. These values are 
         // updated by the visualization
         bool external_forces_active;
+        // The external force introduced by the cursor can either be repellent (pushing the particles away)
+        // or attracting the particles into the direction.
+        External_Force_Direction external_force_direction;
+        // The radius around the cursor casted ray within the particles are effected by the force.
+        float external_force_radius;
         glm::vec3 camera_position;
         glm::vec3 ray_direction_normalized;
 

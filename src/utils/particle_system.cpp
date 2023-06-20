@@ -19,6 +19,8 @@ Particle_System::Particle_System ()
     this->number_of_cells = 0;
     this->gravity_mode = GRAVITY_WAVE;
     this->external_forces_active = true;
+    this->external_force_radius = SPH_EXTERNAL_FORCE_RADIUS;
+    this->external_force_direction = EXTERNAL_FORCE_REPELLENT;
     this->computation_mode = COMPUTATION_MODE_SPATIAL_GRID;
     this->number_of_threads = SIMULATION_NUMBER_OF_THREADS;
 }
@@ -267,7 +269,7 @@ glm::vec3 Particle_System::get_external_force (Particle& particle)
         glm::vec3 perpendicular_vector = glm::cross(this->ray_direction_normalized, camera_to_particle);
         float distance = glm::length(perpendicular_vector);
         // We only apply the force to particles within a given distance to the ray.
-        if (distance > SPH_EXTERNAL_FORCE_RADIUS) {
+        if (distance > this->external_force_radius) {
             return glm::vec3(0.0f);
         }
         // For the particles that are in the given radius we need to find the direction we will set
@@ -275,6 +277,11 @@ glm::vec3 Particle_System::get_external_force (Particle& particle)
         // ray direction of the mouse cursor. Both need to be normalized so that the resulting vector
         // has the length 1 and can be multiplied by the desired force magnitude.
         glm::vec3 force_direction = glm::cross(glm::normalize(perpendicular_vector), this->ray_direction_normalized);
+        if (this->external_force_direction == EXTERNAL_FORCE_ATTRACTIVE) {
+            // Currently the external force is calculated to be repellent, if we want it to be attractive into the
+            // direction of the cursors ray, we need to inverse the direction.
+            force_direction *= -1.0f;
+        }
         return force_direction * SPH_EXTERNAL_FORCE_MAGNITUDE;
     }
 }

@@ -24,3 +24,10 @@ std::string to_string (glm::vec3 vector)
         ", y: "  + std::to_string(vector.y) + 
         ", z: "  + std::to_string(vector.z);
 }
+
+// Simply comparing floats like a == b can result in wrong results.
+// Therefore create a function that compares floats depending on an allowed difference.
+bool floats_are_same (float a, float b, float epsilon)
+{
+    return fabs(a - b) < epsilon;
+}

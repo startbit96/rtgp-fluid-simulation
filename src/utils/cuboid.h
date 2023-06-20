@@ -11,6 +11,11 @@
 class Cuboid
 {
     private:
+        GLuint vertex_buffer_object;
+        GLuint index_buffer_object;
+        GLuint vertex_array_object;
+        std::vector<glm::vec3> vertices;
+        std::vector<GLuint> indices;
 
     public:
         float x_min;
@@ -19,12 +24,7 @@ class Cuboid
         float y_max;
         float z_min;
         float z_max;
-        std::vector<glm::vec3> vertices;
-        std::vector<unsigned int> indices;
-        GLuint vertex_buffer_object;
-        GLuint index_buffer_object;
-        GLuint vertex_array_object;
-
+        
         Cuboid ();
         Cuboid (float x_min, float x_max, float y_min, float y_max, float z_min, float z_max);
         ~Cuboid ();

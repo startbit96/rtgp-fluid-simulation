@@ -139,7 +139,17 @@ void Visualization_Handler::show_imgui_window ()
         // External force attributes.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
         if (ImGui::CollapsingHeader("External force settings")) {
-            ImGui::Checkbox("Enable cursor interaction", &this->particle_system->external_forces_active);
+            ImGui::Checkbox("enable cursor interaction", &this->particle_system->external_forces_active);
+            ImGui::DragFloat("radius of interaction", &this->particle_system->external_force_radius, 
+                SPH_EXTERNAL_FORCE_RADIUS_STEP, SPH_EXTERNAL_FORCE_RADIUS_MIN, SPH_EXTERNAL_FORCE_RADIUS_MAX, "%.3f");
+            // Shall the external force be repellent or attractive?
+            if (ImGui::RadioButton("repellent", this->particle_system->external_force_direction == EXTERNAL_FORCE_REPELLENT)) { 
+                this->particle_system->external_force_direction = EXTERNAL_FORCE_REPELLENT; 
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("attractive", this->particle_system->external_force_direction == EXTERNAL_FORCE_ATTRACTIVE)) { 
+                this->particle_system->external_force_direction = EXTERNAL_FORCE_ATTRACTIVE; 
+            }
         }
         // Collision attributes.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
