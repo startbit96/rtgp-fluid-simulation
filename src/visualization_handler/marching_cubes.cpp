@@ -179,14 +179,191 @@ void Marching_Cubes_Generator::reset_cube_informations (unsigned int index_start
     }
 }
 
-
-// ====================================== MARCHING CUBE ALGORITHM ======================================
-
 void Marching_Cubes_Generator::simulation_space_changed ()
 {
     // To inform the "generate_marching_cubes" function that a resizing of the spatial grid is needed, we simply
     // set the cube_edge_length to a negative value, because this will trigger the recalculation.
     this->cube_edge_length = -1.0f;
+}
+
+// ====================================== MARCHING CUBE ALGORITHM ======================================
+
+void Marching_Cubes_Generator::count_particles (unsigned int index_start, unsigned int index_end)
+{
+    for (int i = index_start; i <= index_end; i++) {
+        // Assign the particle based on its position to a grid cell. Get the index of this cell.
+        int grid_key = this->get_grid_key(this->particle_system->particles.at(i).position);
+        // Lock the spatial grid cell for the insertion of the particle.
+        std::unique_lock<std::mutex> lock(*this->mutex_spatial_grid.at(grid_key));
+        this->marching_cubes.at(grid_key).number_of_particles_within++;
+        lock.unlock();
+    }
+}
+
+void Marching_Cubes_Generator::calculate_vertex_values (unsigned int index_start, unsigned int index_end)
+{
+    // We will look into 27 cells (or less if we are at the border). This is quit a lot so we define
+    // some bitmasks here that indicate depending on where I look what vertices are affected.
+    // The axis are "normal": x is to the right, y to the top, z to the front.
+    // The cube is indexed in this way:
+    //
+    //        4 +--------+ 5
+    //         /|       /|
+    //        / |      / |
+    //     7 +--------+ 6|
+    //       |  |     |  |
+    //       |0 +-----|--+ 1
+    //       | /      | /
+    //       |/       |/
+    //     3 +--------+ 2
+    //
+    // We keep in mind that we use in the following statements nested for loops to look into the neighboring cells.
+    // This runs from look_x -1 to 1, look_y -1 to 1 and look_z -1 to 1 so the look up vertex mask needs to be somehow
+    // related to this.
+    static int look_up_bitmask_matrix[3][3][3] = {
+        // x look to the left.
+        {
+            // y look down.
+            {
+                // z look to the back.
+                //76543210
+                0b00000001,
+                // z look to the same z value.
+                //76543210
+                0b00001001,
+                // z look to the front.
+                //76543210
+                0b00001000
+            },
+            // y look to the same y value.
+            {
+                // z look to the back.
+                //76543210
+                0b00010001,
+                // z look to the same z value.
+                //76543210
+                0b10011001,
+                // z look to the front.
+                //76543210
+                0b10001000
+            },
+            // y look up.
+            {
+                // z look to the back.
+                //76543210
+                0b00010000,
+                // z look to the same z value.
+                //76543210
+                0b10010000,
+                // z look to the front.
+                //76543210
+                0b10000000
+            }
+        },
+        // x look to the same x value.
+        {
+            // y look down.
+            {
+                // z look to the back.
+                //76543210
+                0b00000011,
+                // z look to the same z value.
+                //76543210
+                0b00001111,
+                // z look to the front.
+                //76543210
+                0b00001100
+            },
+            // y look to the same y value.
+            {
+                // z look to the back.
+                //76543210
+                0b00110011,
+                // z look to the same z value.
+                //76543210
+                0b11111111,
+                // z look to the front.
+                //76543210
+                0b11001100
+            },
+            // y look up.
+            {
+                // z look to the back.
+                //76543210
+                0b00110000,
+                // z look to the same z value.
+                //76543210
+                0b11110000,
+                // z look to the front.
+                //76543210
+                0b11000000
+            }
+        },
+        // x look to the right.
+        {
+            // y look down.
+            {
+                // z look to the back.
+                //76543210
+                0b00000010,
+                // z look to the same z value.
+                //76543210
+                0b00000110,
+                // z look to the front.
+                //76543210
+                0b00000100
+            },
+            // y look to the same y value.
+            {
+                // z look to the back.
+                //76543210
+                0b00100010,
+                // z look to the same z value.
+                //76543210
+                0b01100110,
+                // z look to the front.
+                //76543210
+                0b01000100
+            },
+            // y look up.
+            {
+                // z look to the back.
+                //76543210
+                0b00100000,
+                // z look to the same z value.
+                //76543210
+                0b01100000,
+                // z look to the front.
+                //76543210
+                0b01000000
+            }
+        }
+    };
+
+    for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
+        // Get a representive position of this cell. Do not use the corner because it could lead the float precision erros
+        // determining the cell index.
+        glm::vec3 current_cell_position = this->get_min_corner_from_grid_key(idx_cell) + glm::vec3(0.5f * this->cube_edge_length);
+        for (int look_x = -1; look_x <= 1; look_x++) {
+            for (int look_y = -1; look_y <= 1; look_y++) {
+                for (int look_z = -1; look_z <= 1; look_z++) {
+                    glm::vec3 look_position = current_cell_position + glm::vec3(look_x, look_y, look_z) * this->cube_edge_length;
+                    int idx_neighbor = this->get_grid_key(look_position);
+                    if (idx_neighbor == -1) {
+                        // This cell does not exist. So the current one seems to be at the border.
+                        continue;
+                    }
+                    // If it exists, add the number of particles within this cell to the affected vertices.
+                    for (int vertex_index = 0; vertex_index < 8; vertex_index++) {
+                        if (look_up_bitmask_matrix[look_x + 1][look_y + 1][look_z + 1] & (1 << vertex_index)) {
+                            this->marching_cubes.at(idx_cell).vertex_values[vertex_index] += 
+                                this->marching_cubes.at(idx_neighbor).number_of_particles_within;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Marching_Cubes_Generator::generate_marching_cubes ()
@@ -213,8 +390,11 @@ void Marching_Cubes_Generator::generate_marching_cubes ()
         // as the vertice attributes. So we need to reset these.
         this->parallel_for(&Marching_Cubes_Generator::reset_cube_informations, this->number_of_cells);
     }
-    
-
+    // Calculate the number of particles within each cube. Here are mutex needed.
+    this->parallel_for(&Marching_Cubes_Generator::count_particles, this->particle_system->number_of_particles);
+    // Go through all cubes, look to all sides and adjust the vertex values depending on the values of the neighboring cubes.
+    // Here are no mutex needed.
+    this->parallel_for(&Marching_Cubes_Generator::calculate_vertex_values, this->number_of_cells);
 }
 
 

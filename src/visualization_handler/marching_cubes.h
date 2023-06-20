@@ -46,6 +46,8 @@ class Marching_Cubes_Generator
         glm::vec3 get_min_corner_from_grid_key (int grid_key);
         void set_cube_position (unsigned int index_start, unsigned int index_end);
         void reset_cube_informations (unsigned int index_start, unsigned int index_end);
+        void count_particles (unsigned int index_start, unsigned int index_end);
+        void calculate_vertex_values (unsigned int index_start, unsigned int index_end);
 
     public:
         Marching_Cubes_Generator ();

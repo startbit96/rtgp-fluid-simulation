@@ -26,6 +26,19 @@ void main()
 
     // It is difficult to describe the order of indices here. Its basically running around in zick-zack moves to draw all
     // the lines.
+    // The axis are "normal": x is to the right, y to the top, z to the front.
+    // The cube is indexed in this way:
+    //
+    //        4 +--------+ 5
+    //         /|       /|
+    //        / |      / |
+    //     7 +--------+ 6|
+    //       |  |     |  |
+    //       |0 +-----|--+ 1
+    //       | /      | /
+    //       |/       |/
+    //     3 +--------+ 2
+    
     int indices[16] = int[16] (
         0, 1, 5, 6, 2, 3, 7, 4, 
         0, 3, 7, 6, 2, 1, 5, 4
