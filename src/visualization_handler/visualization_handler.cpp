@@ -93,12 +93,22 @@ bool Visualization_Handler::initialize_shaders ()
 void Visualization_Handler::delete_shaders ()
 {
     // Clean up.
-    this->cuboid_shader->delete_program();
+    std::cout << "Delete cuboid shader ..." << std::endl;
+    if (this->cuboid_shader != NULL) {
+        this->cuboid_shader->delete_program();  
+    }
+    std::cout << "Delete fluid shader ..." << std::endl;
     for (Shader& shader : this->fluid_shaders) {
         shader.delete_program();
     }
-    this->marching_cube_grid_shader->delete_program();
-    this->marching_cube_shader->delete_program();
+    std::cout << "Delete marching cube grid shader ..." << std::endl;
+    if (this->marching_cube_grid_shader != NULL) {
+        this->marching_cube_grid_shader->delete_program();
+    }
+    std::cout << "Delete marching cube shader ..." << std::endl;
+    if (this->marching_cube_shader != NULL) {
+        this->marching_cube_shader->delete_program();
+    }
 }
 
 void Visualization_Handler::update_external_force_position ()
