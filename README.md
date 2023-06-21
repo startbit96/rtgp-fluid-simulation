@@ -8,8 +8,6 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 * Implemented using a spatial grid and multithreading with dynamic spatial partitioning.
 * Graphical user interface for changing the fluids and simulations parameters.
 * Mouse cursor interaction with particles (apply external force).
-
-### Features To Do
 * Fluid rendering using the Marching Cubes algorithm.
 
 ## Benchmarking
