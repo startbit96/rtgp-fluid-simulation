@@ -15,6 +15,8 @@ Marching_Cubes_Generator::Marching_Cubes_Generator ()
     this->cube_edge_length = -1.0f;
     this->new_cube_edge_length = MARCHING_CUBES_CUBE_EDGE_LENGTH;
     this->number_of_cells = 0;
+    this->dataChanged = false;
+    this->isovalue = MARCHING_CUBES_ISOVALUE;
 }
 
 
@@ -107,11 +109,40 @@ void Marching_Cubes_Generator::calculate_number_of_grid_cells ()
     index++;
     // Number of particles.
     GLCall( glEnableVertexAttribArray(index) );
-    GLCall( glVertexAttribPointer(index, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, number_of_particles_within))) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, number_of_particles_within))) );
     index++;
     // Vertex values.
+    // Vertex 0.
     GLCall( glEnableVertexAttribArray(index) );
-    GLCall( glVertexAttribPointer(index, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, vertex_values))) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_0))) );
+    index++;
+    // Vertex 1.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_1))) );
+    index++;
+    // Vertex 2.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_2))) );
+    index++;
+    // Vertex 3.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_3))) );
+    index++;
+    // Vertex 4.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_4))) );
+    index++;
+    // Vertex 5.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_5))) );
+    index++;
+    // Vertex 6.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_6))) );
+    index++;
+    // Vertex 7.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 1, GL_INT, GL_FALSE, sizeof(Marching_Cube), (GLvoid*)(offsetof(Marching_Cube, value_vertex_7))) );
     index++;
 
     // Unbind.
@@ -172,10 +203,16 @@ void Marching_Cubes_Generator::set_cube_position (unsigned int index_start, unsi
 void Marching_Cubes_Generator::reset_cube_informations (unsigned int index_start, unsigned int index_end)
 {
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        // Reset the number of particles within the cube.
+        // Reset the number of particles within the cube and the vertex values.
         this->marching_cubes.at(idx_cell).number_of_particles_within = 0;
-        // Reset the vertex values.
-        memset(this->marching_cubes.at(idx_cell).vertex_values, 0, sizeof(this->marching_cubes.at(idx_cell).vertex_values));
+        this->marching_cubes.at(idx_cell).value_vertex_0 = 0;
+        this->marching_cubes.at(idx_cell).value_vertex_1 = 0;
+        this->marching_cubes.at(idx_cell).value_vertex_2 = 0;
+        this->marching_cubes.at(idx_cell).value_vertex_3 = 0;
+        this->marching_cubes.at(idx_cell).value_vertex_4 = 0;
+        this->marching_cubes.at(idx_cell).value_vertex_5 = 0;
+        this->marching_cubes.at(idx_cell).value_vertex_6 = 0;
+        this->marching_cubes.at(idx_cell).value_vertex_7 = 0;
     }
 }
 
@@ -343,6 +380,7 @@ void Marching_Cubes_Generator::calculate_vertex_values (unsigned int index_start
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
         // Get a representive position of this cell. Do not use the corner because it could lead the float precision erros
         // determining the cell index.
+        int vertex_values[8] = {0};
         glm::vec3 current_cell_position = this->get_min_corner_from_grid_key(idx_cell) + glm::vec3(0.5f * this->cube_edge_length);
         for (int look_x = -1; look_x <= 1; look_x++) {
             for (int look_y = -1; look_y <= 1; look_y++) {
@@ -356,13 +394,22 @@ void Marching_Cubes_Generator::calculate_vertex_values (unsigned int index_start
                     // If it exists, add the number of particles within this cell to the affected vertices.
                     for (int vertex_index = 0; vertex_index < 8; vertex_index++) {
                         if (look_up_bitmask_matrix[look_x + 1][look_y + 1][look_z + 1] & (1 << vertex_index)) {
-                            this->marching_cubes.at(idx_cell).vertex_values[vertex_index] += 
-                                this->marching_cubes.at(idx_neighbor).number_of_particles_within;
+                            vertex_values[vertex_index] += this->marching_cubes.at(idx_neighbor).number_of_particles_within;
                         }
                     }
                 }
             }
         }
+        // Now set the values from the used vector to the struct. Since we cannot use a vector of eight values in the 
+        // shader we need the workaround with single values.
+        this->marching_cubes.at(idx_cell).value_vertex_0 = vertex_values[0];
+        this->marching_cubes.at(idx_cell).value_vertex_1 = vertex_values[1];
+        this->marching_cubes.at(idx_cell).value_vertex_2 = vertex_values[2];
+        this->marching_cubes.at(idx_cell).value_vertex_3 = vertex_values[3];
+        this->marching_cubes.at(idx_cell).value_vertex_4 = vertex_values[4];
+        this->marching_cubes.at(idx_cell).value_vertex_5 = vertex_values[5];
+        this->marching_cubes.at(idx_cell).value_vertex_6 = vertex_values[6];
+        this->marching_cubes.at(idx_cell).value_vertex_7 = vertex_values[7];
     }
 }
 
@@ -395,6 +442,8 @@ void Marching_Cubes_Generator::generate_marching_cubes ()
     // Go through all cubes, look to all sides and adjust the vertex values depending on the values of the neighboring cubes.
     // Here are no mutex needed.
     this->parallel_for(&Marching_Cubes_Generator::calculate_vertex_values, this->number_of_cells);
+    // The data changed, so inform the draw call to update the data.
+    this->dataChanged = true;
 }
 
 
@@ -406,9 +455,13 @@ void Marching_Cubes_Generator::generate_marching_cubes ()
 void Marching_Cubes_Generator::draw (bool unbind)
 {
     // Update the marching cubes data in the vertex buffer object.
-    GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
-    GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Marching_Cube) * this->number_of_cells, &this->marching_cubes.at(0)) );
-    GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+    // But only if the data changed.
+    if (this->dataChanged == true) {
+        GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
+        GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Marching_Cube) * this->number_of_cells, &this->marching_cubes.at(0)) );
+        GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
+        this->dataChanged = false;
+    }
     // Draw the marching cubes using the vertex array object.
     GLCall( glBindVertexArray(this->vertex_array_object) );
     GLCall( glDrawElements(GL_POINTS, this->number_of_cells, GL_UNSIGNED_INT, 0) );

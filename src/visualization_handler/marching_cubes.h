@@ -1,5 +1,15 @@
 #pragma once
 
+//        4 +--------+ 5
+//         /|       /|
+//        / |      / |
+//     7 +--------+ 6|
+//       |  |     |  |
+//       |0 +-----|--+ 1
+//       | /      | /
+//       |/       |/
+//     3 +--------+ 2
+
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <vector>
@@ -7,16 +17,35 @@
 
 #include "../utils/particle_system.h"
 
+// The edge length of a single marching cube. The less the edge length, the higher the resolution.
 #define MARCHING_CUBES_CUBE_EDGE_LENGTH         0.1f
 #define MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN     0.005f
 #define MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX     0.2f
 #define MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP    0.0001f
+// The isovalue used in the marching cubes algorithm to determine if a vertex is within the object
+// or outside. Since we simple count the number of particles in the marching cube and apply this value
+// to the neighboring cubes vertices, we use int values here.
+// Note that the step is not really the step the value can take but more the sensitivity for the imgui window.
+#define MARCHING_CUBES_ISOVALUE                 1
+#define MARCHING_CUBES_ISOVALUE_MIN             1
+#define MARCHING_CUBES_ISOVALUE_MAX             20
+#define MARCHING_CUBES_ISOVALUE_STEP            0.05
 
 struct Marching_Cube
 {
     glm::vec3 corner_min;
-    GLuint number_of_particles_within;
-    GLuint vertex_values[8];
+    GLint number_of_particles_within;
+    // We cannot pass a vertex_values[8] to the shader since max. 4 values are supported.
+    // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glVertexAttribPointer.xhtml
+    // So we make a workaround.
+    GLint value_vertex_0;
+    GLint value_vertex_1;
+    GLint value_vertex_2;
+    GLint value_vertex_3;
+    GLint value_vertex_4;
+    GLint value_vertex_5;
+    GLint value_vertex_6;
+    GLint value_vertex_7;
 };
 
 class Marching_Cubes_Generator
@@ -49,6 +78,11 @@ class Marching_Cubes_Generator
         void count_particles (unsigned int index_start, unsigned int index_end);
         void calculate_vertex_values (unsigned int index_start, unsigned int index_end);
 
+        // We may call the draw function of the marching cubes twice per frame.
+        // (once for the grid and once for the generated surface)
+        // To not pass the new data twice to the buffer data, we check if the data changed.
+        bool dataChanged;
+
     public:
         Marching_Cubes_Generator ();
 
@@ -66,6 +100,8 @@ class Marching_Cubes_Generator
         float cube_edge_length;
         // A public variable that can be changed using imgui.
         float new_cube_edge_length;
+        // A value that will be passed as an uniform to the geometry shader for the marching cubes algorithm.
+        int isovalue;
 
         // Draws the marching cubes. Note that the shader will be selected and activated by the visualization handler.
         void draw (bool unbind = false);

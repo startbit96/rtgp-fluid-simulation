@@ -1,11 +1,17 @@
 #version 330 core
 
+// We get the points and want to send the fragment shader a quad.
+// The quad will then be made to a circle by the fragment shader.
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
 
+// The velocity will be passed to the fragment shader since we need it there for the coloring.
+// The density will be used within the geometry shader to determine the size of the particle.
+// The input of the geometry shader must be arrays.
 in vec3 vertex_velocity[];
 in float vertex_density[];
 out vec3 geometry_velocity; 
+// The tex coord will be used for the fragment shader to know where to cut the quad into a circle.
 out vec2 tex_coord;
 
 void main()
@@ -23,6 +29,7 @@ void main()
     float density_normalized = (density - density_min) / (density_max - density_min);
     float radius = mix(radius_min, radius_max, density_normalized);
 
+    // We emit four vertices, these are the vertices of the quad.
     gl_Position = position + vec4(-radius, -radius, 0.0, 0.0);
     tex_coord = vec2(0.0, 0.0);
     EmitVertex();

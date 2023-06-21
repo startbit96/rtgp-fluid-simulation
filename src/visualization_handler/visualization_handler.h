@@ -48,8 +48,9 @@ class Visualization_Handler
         // the execution of the program. Therefore save them in a vector.
         std::vector<Shader> fluid_shaders;
         unsigned int current_fluid_shader;
-        // The shader for the marching cubes grid.
+        // The shader for the marching cubes grid and the marching cubes generated surfaces.
         Shader* marching_cube_grid_shader;
+        Shader* marching_cube_shader;
         // The projection matrix. It will use the values defined above in the define section.
         float aspect_ratio;
         glm::mat4 projection_matrix;
