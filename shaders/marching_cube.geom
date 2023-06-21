@@ -3,6 +3,10 @@
 layout(points) in;
 layout(triangle_strip, max_vertices = 15) out;
 
+// For each triangle we create we will also calculate the normal
+// and pass it to the fragment shader.
+out vec3 fragment_normal;
+
 // The cubes vertices are indexed in this way:
 //
 //        4 +--------+ 5
@@ -472,6 +476,12 @@ void main()
         EmitVertex();
         gl_Position = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 2]];
         EmitVertex();
+        // Calculate the normal.
+        vec3 edge_vector_ab = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 1]].xyz - 
+            interpolated_vertex_list[triangle_table[cube_index * 15 + i]].xyz;
+        vec3 edge_vector_ac = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 2]].xyz - 
+            interpolated_vertex_list[triangle_table[cube_index * 15 + i]].xyz;
+        fragment_normal = normalize(cross(edge_vector_ab, edge_vector_ac));
         EndPrimitive();
     }
 }

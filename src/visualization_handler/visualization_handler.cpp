@@ -302,7 +302,7 @@ void Visualization_Handler::visualize ()
     }
 
 
-    GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) );
+    //GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_LINE) );
 
     // Determine if we need to calculate the marching cubes.
     if ((this->draw_marching_cubes_grid == true) || (this->draw_marching_cubes_surface == true)) {
