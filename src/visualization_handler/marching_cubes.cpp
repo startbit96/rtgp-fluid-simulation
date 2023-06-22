@@ -2,6 +2,7 @@
 
 #include <string>
 #include <thread>
+#include <memory>
 
 #include "../utils/debug.h"
 #include "../utils/helper.h"
