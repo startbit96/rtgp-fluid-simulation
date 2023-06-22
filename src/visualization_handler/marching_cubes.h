@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <mutex>
+#include <memory>
 
 #include "../utils/particle_system.h"
 

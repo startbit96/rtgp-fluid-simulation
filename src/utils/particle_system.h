@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <mutex>
+#include <memory>
 
 #include "particle.h"
 #include "cuboid.h"

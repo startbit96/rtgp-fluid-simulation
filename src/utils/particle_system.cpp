@@ -3,7 +3,6 @@
 #include <math.h>
 #include <thread>
 #include <algorithm>
-#include <memory>
 
 #include "debug.h"
 #include "helper.h"
