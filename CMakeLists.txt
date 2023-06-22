@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 project(rtgp_fluid_simulation)
 
 set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_INSTALL_PREFIX ./build)
 
 # Set compiler flags to suppress deprecated declarations warnings.
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -104,4 +105,9 @@ target_link_libraries(rtgp_fluid_simulation PRIVATE
     ${GLEW_LIBRARIES}
     glfw
     glm::glm
+)
+
+# Install.
+install(TARGETS rtgp_fluid_simulation
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
