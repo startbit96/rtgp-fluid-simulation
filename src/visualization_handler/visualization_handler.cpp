@@ -19,14 +19,9 @@ Visualization_Handler::Visualization_Handler ()
     // At the start, the pointer to the GLFW window will be set to NULL.
     // Make sure to pass the pointer to the window before calling visualize().
     this->window = nullptr;
-    // Calculate the projection matrix once.
-    this->aspect_ratio = (float)WINDOW_DEFAULT_WIDTH / (float)WINDOW_DEFAULT_HEIGHT;
-    this->projection_matrix = glm::perspective(
-        PERSPECTIVE_FOV_DEG, 
-        this->aspect_ratio,
-        PERSPECTIVE_NEAR, 
-        PERSPECTIVE_FAR
-    );
+    // Calculate the aspect ratio and the projection matrix.
+    this->update_window_size(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT);
+    // Set the initial draw settings.
     this->draw_simulation_space = true;
     this->draw_fluid_starting_positions = true;
     this->draw_particles = true;
@@ -51,6 +46,21 @@ Visualization_Handler::Visualization_Handler ()
     
     // The shaders will be initialized later, because we have to wait for 
     // the OpenGL environment to be set up.
+}
+
+void Visualization_Handler::update_window_size (int width, int height)
+{
+    // Save the window width and height, we need it for the mouse cursor interaction.
+    this->window_width = width;
+    this->window_height = height;
+    // Calculate the aspect ratio and the projection matrix.
+    this->aspect_ratio = (float)this->window_width / (float)this->window_height;
+    this->projection_matrix = glm::perspective(
+        PERSPECTIVE_FOV_DEG, 
+        this->aspect_ratio,
+        PERSPECTIVE_NEAR, 
+        PERSPECTIVE_FAR
+    );
 }
 
 bool Visualization_Handler::initialize_shaders ()
@@ -119,8 +129,8 @@ void Visualization_Handler::update_external_force_position ()
     if (this->particle_system->external_forces_active == true) {
         // The mouse cursor position are given in pixel values. 
         // We need them to be in normalized device coordinates ranging from [-1; 1].
-        float normalized_device_coord_x = (2.0f * this->cursor_position.x) / WINDOW_DEFAULT_WIDTH - 1.0f;
-        float normalized_device_coord_y = 1.0f - (2.0f * this->cursor_position.y) / WINDOW_DEFAULT_HEIGHT;
+        float normalized_device_coord_x = (2.0f * this->cursor_position.x) / this->window_width - 1.0f;
+        float normalized_device_coord_y = 1.0f - (2.0f * this->cursor_position.y) / this->window_height;
         // From this we can create the position in clip space. The z-value is -1.
         glm::vec4 cursor_position_clip = glm::vec4(normalized_device_coord_x, normalized_device_coord_y, -1.0f, 1.0f);
         // Transform the clip space position to the view space using the inverse projection matrix.

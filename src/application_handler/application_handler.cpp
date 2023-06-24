@@ -36,8 +36,8 @@ bool Application_Handler::initialize_window()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    // Do not allow the window to resize.
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    // Allow the window to resize.
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
     // Create a windowed mode window and its OpenGL context.
     this->window = glfwCreateWindow(WINDOW_DEFAULT_WIDTH, 
@@ -76,6 +76,10 @@ bool Application_Handler::initialize_window()
     int width, height;
     glfwGetFramebufferSize(this->window, &width, &height);
     glViewport(0, 0, width, height);
+
+    // From these values we can calculate the scale factors.
+    this->scale_factor_x = float(width) / float(WINDOW_DEFAULT_WIDTH);
+    this->scale_factor_y = float(height) / float(WINDOW_DEFAULT_HEIGHT);
 
     // Enable z-test.
     glEnable(GL_DEPTH_TEST);

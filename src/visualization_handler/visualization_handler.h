@@ -52,6 +52,8 @@ class Visualization_Handler
         Shader* marching_cube_grid_shader;
         Shader* marching_cube_shader;
         // The projection matrix. It will use the values defined above in the define section.
+        int window_width;
+        int window_height;
         float aspect_ratio;
         glm::mat4 projection_matrix;
         // Some settings regarding what has to be drawn and what.
@@ -111,6 +113,9 @@ class Visualization_Handler
         // Shader related functions.
         bool initialize_shaders ();
         void delete_shaders ();
+
+        // A function to update the window width and height. We need this for the projection matrix.
+        void update_window_size (int width, int height);
 
         // Visualize everything (particles, simulation space, imgui window, ...).
         void visualize ();

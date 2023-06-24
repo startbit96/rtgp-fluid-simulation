@@ -90,6 +90,12 @@ void rtgp_application()
                 std::cout << "Initialize input handler." << std::endl;
                 // Since we can not provide a pointer to a member function, we use a function that calls the member function.
                 glfwSetKeyCallback(application_handler.window, key_callback);
+                // Set the callbacks for zoom and rotation (mouse callbacks).
+                glfwSetScrollCallback(application_handler.window, scroll_callback);
+                glfwSetMouseButtonCallback(application_handler.window, mouse_button_callback);
+                glfwSetCursorPosCallback(application_handler.window, cursor_position_callback);
+                // Set the callback for the window resize.
+                glfwSetFramebufferSizeCallback(application_handler.window, framebuffer_size_callback);
                 // Set the different key-reactions for the different contexts. 
                 // Currently it would also be enough to just use one context / drop the concept of input context but for future 
                 // development we use the concept of input-contexts.
@@ -112,10 +118,6 @@ void rtgp_application()
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION") );
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES") );
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_DOWN, decrease_number_of_particles, "DECREASE NUMBER OF PARTICLES") );
-                // Set the callbacks for zoom and rotation (mouse callbacks).
-                glfwSetScrollCallback(application_handler.window, scroll_callback);
-                glfwSetMouseButtonCallback(application_handler.window, mouse_button_callback);
-                glfwSetCursorPosCallback(application_handler.window, cursor_position_callback);
                 // Activate the IDLE-input-context (this is used for everything but the running simulation).
                 if (application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_IDLE) == false) {
                     // Something went wrong. Terminate the application.
@@ -308,4 +310,15 @@ void cursor_position_callback(GLFWwindow* window, double x_pos, double y_pos)
     // Needed for applying external forces using the mouse:
     application_handler.visualization_handler.cursor_position.x = x_pos;
     application_handler.visualization_handler.cursor_position.y = y_pos;
+}
+
+void framebuffer_size_callback (GLFWwindow* window, int width, int height)
+{
+    // We need to adapt the viewport for OpenGL.
+    glViewport(0, 0, width, height);
+    // Also the visualization handler needs to be notified in order to recalculate the 
+    // projection matrix. These values need to be divided by the scale factor.
+    // For more information see application_handler.h.
+    application_handler.visualization_handler.update_window_size(   width / application_handler.scale_factor_x, 
+                                                                    height / application_handler.scale_factor_y);
 }
