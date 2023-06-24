@@ -36,7 +36,7 @@ Click [here](https://github.com/g-truc/glm) for more informations.
 ### Further notes.
 This project uses [Dear ImGui](https://github.com/ocornut/imgui). There is no need for installing, the source files are included in this repository.  
 
-## Installation
+## Installation and Usage
 
 Clone the repository.  
 
@@ -54,13 +54,10 @@ $ cmake ..
 $ make  
 ```
 
-If an error occurs while installing the application, make sure, that you have installed all the mentioned dependencies.
-
-## Usage
-
 Run the application with `./rtgp_fluid_simulation` within the build directory.  
-Note that because of relative paths for loading the shaders, you cannot run the program from within the repositories main directory.
+Note that because of relative paths for loading the shaders, you cannot run the program from within the repositories main directory.  
 
+If an error occurs while installing the application, make sure, that you have installed all the mentioned dependencies.  
 ### Key Bindings
 The fluids parameters and some simulation settings can be adapted using the graphical user interface.  
 Further interaction is possible through the keyboard as listed in the key binding list below.  
