@@ -72,6 +72,8 @@ class Visualization_Handler
         bool draw_particles;
         bool draw_marching_cubes_surface;
         bool draw_marching_cubes_grid;
+        // The marching cubes surface can be either plotted with surfaces or as a wireframe.
+        bool draw_marching_cubes_surface_wireframe;
         // Color settings.
         glm::vec4 color_simulation_space;
         glm::vec4 color_fluid_starting_positions;
