@@ -165,8 +165,8 @@ void Visualization_Handler::show_imgui_window ()
             ImGui::Checkbox("show marching cube grid", &this->draw_marching_cubes_grid);
             ImGui::DragFloat("marching cube grid size", &this->marching_cube_generator.new_cube_edge_length, 
                 MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP, MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN, MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX, "%.4f");
-            ImGui::DragInt("isovalue", &this->marching_cube_generator.isovalue, 
-                MARCHING_CUBES_ISOVALUE_STEP, MARCHING_CUBES_ISOVALUE_MIN, MARCHING_CUBES_ISOVALUE_MAX, "%d");
+            ImGui::DragFloat("isovalue", &this->marching_cube_generator.isovalue, 
+                MARCHING_CUBES_ISOVALUE_STEP, MARCHING_CUBES_ISOVALUE_MIN, MARCHING_CUBES_ISOVALUE_MAX, "%.3f");
         }
         // Fluid attributes.
         ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
@@ -347,7 +347,7 @@ void Visualization_Handler::visualize ()
         // Set the cubes edge length.
         this->marching_cube_shader->set_uniform_1f("u_cube_edge_length", this->marching_cube_generator.cube_edge_length);
         // Set the isovalue to be used in the marching cubes algorithm.
-        this->marching_cube_shader->set_uniform_1i("u_isovalue", this->marching_cube_generator.isovalue);
+        this->marching_cube_shader->set_uniform_1f("u_isovalue", this->marching_cube_generator.isovalue);
         // Draw the grid.
         this->marching_cube_generator.draw();
         // Deactivate the wireframe mode if necessary.

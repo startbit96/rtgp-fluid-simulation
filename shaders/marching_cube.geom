@@ -55,7 +55,7 @@ uniform float u_cube_edge_length;
 // The marching cubes algorithm uses an isovalue to determine which vertex is within the object 
 // and which vertex is outside. This value can be changed by the user and is therefore given
 // as an uniform.
-uniform int u_isovalue;
+uniform float u_isovalue;
 
 // Lookup tables for the marching cube algorithm.
 // from here: http://paulbourke.net/geometry/polygonise/

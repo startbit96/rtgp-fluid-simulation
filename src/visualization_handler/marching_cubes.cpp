@@ -14,7 +14,8 @@ Marching_Cubes_Generator::Marching_Cubes_Generator ()
     this->vertex_array_object = 0;
     this->cube_edge_length = -1.0f;
     this->new_cube_edge_length = MARCHING_CUBES_CUBE_EDGE_LENGTH;
-    this->number_of_cells = 0;
+    this->number_of_cells_density_estimator = 0;
+    this->number_of_cells_marching_cubes = 0;
     this->dataChanged = false;
     this->isovalue = MARCHING_CUBES_ISOVALUE;
 }
@@ -57,25 +58,42 @@ void Marching_Cubes_Generator::parallel_for (void (Marching_Cubes_Generator::* f
 
 void Marching_Cubes_Generator::calculate_number_of_grid_cells ()
 {
+    // At first we calculate the number of cells for the density estimator.
     // We add one cube row before and one cube behind the simulation space to have good surfaces.
-    this->number_of_cells_x = ceil((this->particle_system->simulation_space->x_max - this->particle_system->simulation_space->x_min) / 
+    // We need this to be sure to have density values of zero at the borders.
+    this->number_of_cells_x_density_estimator = ceil((this->particle_system->simulation_space->x_max - this->particle_system->simulation_space->x_min) / 
         this->cube_edge_length) + 2;
-    this->number_of_cells_y = ceil((this->particle_system->simulation_space->y_max - this->particle_system->simulation_space->y_min) / 
+    this->number_of_cells_y_density_estimator = ceil((this->particle_system->simulation_space->y_max - this->particle_system->simulation_space->y_min) / 
         this->cube_edge_length) + 2;
-    this->number_of_cells_z = ceil((this->particle_system->simulation_space->z_max - this->particle_system->simulation_space->z_min) / 
+    this->number_of_cells_z_density_estimator = ceil((this->particle_system->simulation_space->z_max - this->particle_system->simulation_space->z_min) / 
         this->cube_edge_length) + 2;
-    this->number_of_cells = this->number_of_cells_x * this->number_of_cells_y * this->number_of_cells_z;
-    // The marching cubes information need also to be reset.
-    this->marching_cubes.clear();
-    this->marching_cubes.resize(this->number_of_cells);
-    // Resize the mutex vector.
+    this->number_of_cells_density_estimator = this->number_of_cells_x_density_estimator * 
+        this->number_of_cells_y_density_estimator * this->number_of_cells_z_density_estimator;
+    // Reset and resize the density estimator spatial grid.
+    this->density_estimator.clear();
+    this->density_estimator.resize(this->number_of_cells_density_estimator);
+    // Resize the mutex vector for the density estimator.
     // Iterate over each element in the vector and assign a newly created std::mutex using std::make_unique.
-    this->mutex_spatial_grid.clear();
-    this->mutex_spatial_grid.resize(this->number_of_cells);
-    for (auto& mutex : this->mutex_spatial_grid) {
+    this->mutex_density_estimator.clear();
+    this->mutex_density_estimator.resize(this->number_of_cells_density_estimator);
+    for (auto& mutex : this->mutex_density_estimator) {
         mutex = std::make_unique<std::mutex>();
     }
-    // The recalculation of the grid cells / cubes also demands the resetting of the vbo, ibo and vao since
+
+    // Now do the same for the marching cubes. The number of cells of the marching cubes in each axis is one less
+    // than the number of the cells of the density estimator since it is shifted half the cubes edge length and ends
+    // half the cubes edge length earlier.
+    this->number_of_cells_x_marching_cubes = this->number_of_cells_x_density_estimator - 1;
+    this->number_of_cells_y_marching_cubes = this->number_of_cells_y_density_estimator - 1;
+    this->number_of_cells_z_marching_cubes = this->number_of_cells_z_density_estimator - 1;
+    this->number_of_cells_marching_cubes = this->number_of_cells_x_marching_cubes * 
+        this->number_of_cells_y_marching_cubes * this->number_of_cells_z_marching_cubes;
+    // Reset and resize the spatial grid of the marching cubes.
+    this->marching_cubes.clear();
+    this->marching_cubes.resize(this->number_of_cells_marching_cubes);
+    // For the marching cubes we will not need a mutex vector.
+
+    // The recalculation of the grid cells / cubes also demands the resetting of the VBO, IBO and VAO since
     // the number of cubes changed.
 
     // Clear the buffers if there is something to clear.
@@ -91,15 +109,15 @@ void Marching_Cubes_Generator::calculate_number_of_grid_cells ()
 
     // Copy the data into the vertex buffer object.
     GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
-    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(Marching_Cube) * this->number_of_cells, &this->marching_cubes.at(0), GL_STATIC_DRAW) );
+    GLCall( glBufferData(GL_ARRAY_BUFFER, sizeof(Marching_Cube) * this->number_of_cells_marching_cubes, &this->marching_cubes.at(0), GL_STATIC_DRAW) );
 
     // Copy the indices into the index buffer object.
     GLCall( glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->index_buffer_object) );
     this->indices.clear();
-    for (unsigned int i = 0; i < this->number_of_cells; i++) {
+    for (unsigned int i = 0; i < this->number_of_cells_marching_cubes; i++) {
         this->indices.push_back(i);
     }
-    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_cells, &this->indices.at(0), GL_STATIC_DRAW) );
+    GLCall( glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * this->number_of_cells_marching_cubes, &this->indices.at(0), GL_STATIC_DRAW) );
 
     // Describe the vertex buffer layout of a marching cube.
     unsigned int index = 0;
@@ -156,30 +174,30 @@ inline int Marching_Cubes_Generator::discretize_value (float value)
     return (int)floor(value / this->cube_edge_length);
 }
 
-inline int Marching_Cubes_Generator::get_grid_key (glm::vec3 position)
+inline int Marching_Cubes_Generator::get_grid_key_density_estimator (glm::vec3 position)
 {
     // We move the particles position into positive values and also a little bit more because we have 
     // the outer cubes.
     position = position + this->particle_system->particle_offset + glm::vec3(this->cube_edge_length);
-    // Check if the position is within the grids volume.
-    if ((position.x < 0.0f) || (position.x > this->number_of_cells_x * this->cube_edge_length) ||
-        (position.y < 0.0f) || (position.y > this->number_of_cells_y * this->cube_edge_length) ||
-        (position.z < 0.0f) || (position.z > this->number_of_cells_z * this->cube_edge_length)) {
+    // Check if the position is within the density estimator grids volume.
+    if ((position.x < 0.0f) || (position.x > this->number_of_cells_x_density_estimator * this->cube_edge_length) ||
+        (position.y < 0.0f) || (position.y > this->number_of_cells_y_density_estimator * this->cube_edge_length) ||
+        (position.z < 0.0f) || (position.z > this->number_of_cells_z_density_estimator * this->cube_edge_length)) {
             return -1;
     }
     return
         (Marching_Cubes_Generator::discretize_value(position.x)) +
-        (Marching_Cubes_Generator::discretize_value(position.y) * this->number_of_cells_x) +
-        (Marching_Cubes_Generator::discretize_value(position.z) * this->number_of_cells_x * this->number_of_cells_y);
+        (Marching_Cubes_Generator::discretize_value(position.y) * this->number_of_cells_x_density_estimator) +
+        (Marching_Cubes_Generator::discretize_value(position.z) * this->number_of_cells_x_density_estimator * this->number_of_cells_y_density_estimator);
 }
 
 
-inline glm::vec3 Marching_Cubes_Generator::get_min_corner_from_grid_key (int grid_key)
+inline glm::vec3 Marching_Cubes_Generator::get_position_from_grid_key_marching_cube (int grid_key)
 {
     // Get the position index values in respective to the x, y and z coordinates.
-    int cell_index_x = grid_key % this->number_of_cells_x;
-    int cell_index_y = (grid_key / this->number_of_cells_x) % this->number_of_cells_y;
-    int cell_index_z = grid_key / (this->number_of_cells_x * this->number_of_cells_y);
+    int cell_index_x = grid_key % this->number_of_cells_x_marching_cubes;
+    int cell_index_y = (grid_key / this->number_of_cells_x_marching_cubes) % this->number_of_cells_y_marching_cubes;
+    int cell_index_z = grid_key / (this->number_of_cells_x_marching_cubes * this->number_of_cells_y_marching_cubes);
     // From this calculate the position.
     glm::vec3 position = glm::vec3(
         cell_index_x * this->cube_edge_length,
@@ -187,8 +205,10 @@ inline glm::vec3 Marching_Cubes_Generator::get_min_corner_from_grid_key (int gri
         cell_index_z * this->cube_edge_length
     );
     // We need to translate the position back to the global coordinates since we moved the position to
-    // only allow position values.
-    position = position - this->particle_system->particle_offset - glm::vec3(this->cube_edge_length);
+    // only allow position values. 
+    // We will not shift for the whole cube edge length but only for the half since the marching cubes are 
+    // shifted halb the cube edge length in comparison to the density estimator.
+    position = position - this->particle_system->particle_offset - glm::vec3(this->cube_edge_length / 2);
     return position;
 }
 
@@ -196,23 +216,7 @@ inline glm::vec3 Marching_Cubes_Generator::get_min_corner_from_grid_key (int gri
 void Marching_Cubes_Generator::set_cube_position (unsigned int index_start, unsigned int index_end) 
 {
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        this->marching_cubes.at(idx_cell).corner_min = this->get_min_corner_from_grid_key(idx_cell);
-    }
-}
-
-void Marching_Cubes_Generator::reset_cube_informations (unsigned int index_start, unsigned int index_end)
-{
-    for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        // Reset the number of particles within the cube and the vertex values.
-        this->marching_cubes.at(idx_cell).number_of_particles_within = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_0 = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_1 = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_2 = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_3 = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_4 = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_5 = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_6 = 0;
-        this->marching_cubes.at(idx_cell).value_vertex_7 = 0;
+        this->marching_cubes.at(idx_cell).corner_min = this->get_position_from_grid_key_marching_cube(idx_cell);
     }
 }
 
@@ -225,24 +229,24 @@ void Marching_Cubes_Generator::simulation_space_changed ()
 
 // ====================================== MARCHING CUBE ALGORITHM ======================================
 
-void Marching_Cubes_Generator::count_particles (unsigned int index_start, unsigned int index_end)
+
+void Marching_Cubes_Generator::estimate_density (unsigned int index_start, unsigned int index_end)
 {
     for (int i = index_start; i <= index_end; i++) {
         // Assign the particle based on its position to a grid cell. Get the index of this cell.
-        int grid_key = this->get_grid_key(this->particle_system->particles.at(i).position);
+        int grid_key = this->get_grid_key_density_estimator(this->particle_system->particles.at(i).position);
         // Lock the spatial grid cell for the insertion of the particle.
-        std::unique_lock<std::mutex> lock(*this->mutex_spatial_grid.at(grid_key));
-        this->marching_cubes.at(grid_key).number_of_particles_within++;
+        std::unique_lock<std::mutex> lock(*this->mutex_density_estimator.at(grid_key));
+        this->density_estimator.at(grid_key)++;
         lock.unlock();
     }
 }
 
 void Marching_Cubes_Generator::calculate_vertex_values (unsigned int index_start, unsigned int index_end)
 {
-    // We will look into 27 cells (or less if we are at the border). This is quit a lot so we define
-    // some bitmasks here that indicate depending on where I look what vertices are affected.
-    // The axis are "normal": x is to the right, y to the top, z to the front.
-    // The cube is indexed in this way:
+    // We will look into the density estimator for all the vertices of the cube. How the vertices are indexed is 
+    // shown here. It is important to keep this indexing since we will use the same in the geometry shader for the
+    // marching cubes algorithm.
     //
     //        4 +--------+ 5
     //         /|       /|
@@ -253,163 +257,27 @@ void Marching_Cubes_Generator::calculate_vertex_values (unsigned int index_start
     //       | /      | /
     //       |/       |/
     //     3 +--------+ 2
-    //
-    // We keep in mind that we use in the following statements nested for loops to look into the neighboring cells.
-    // This runs from look_x -1 to 1, look_y -1 to 1 and look_z -1 to 1 so the look up vertex mask needs to be somehow
-    // related to this.
-    static int look_up_bitmask_matrix[3][3][3] = {
-        // x look to the left.
-        {
-            // y look down.
-            {
-                // z look to the back.
-                //76543210
-                0b00000001,
-                // z look to the same z value.
-                //76543210
-                0b00001001,
-                // z look to the front.
-                //76543210
-                0b00001000
-            },
-            // y look to the same y value.
-            {
-                // z look to the back.
-                //76543210
-                0b00010001,
-                // z look to the same z value.
-                //76543210
-                0b10011001,
-                // z look to the front.
-                //76543210
-                0b10001000
-            },
-            // y look up.
-            {
-                // z look to the back.
-                //76543210
-                0b00010000,
-                // z look to the same z value.
-                //76543210
-                0b10010000,
-                // z look to the front.
-                //76543210
-                0b10000000
-            }
-        },
-        // x look to the same x value.
-        {
-            // y look down.
-            {
-                // z look to the back.
-                //76543210
-                0b00000011,
-                // z look to the same z value.
-                //76543210
-                0b00001111,
-                // z look to the front.
-                //76543210
-                0b00001100
-            },
-            // y look to the same y value.
-            {
-                // z look to the back.
-                //76543210
-                0b00110011,
-                // z look to the same z value.
-                //76543210
-                0b11111111,
-                // z look to the front.
-                //76543210
-                0b11001100
-            },
-            // y look up.
-            {
-                // z look to the back.
-                //76543210
-                0b00110000,
-                // z look to the same z value.
-                //76543210
-                0b11110000,
-                // z look to the front.
-                //76543210
-                0b11000000
-            }
-        },
-        // x look to the right.
-        {
-            // y look down.
-            {
-                // z look to the back.
-                //76543210
-                0b00000010,
-                // z look to the same z value.
-                //76543210
-                0b00000110,
-                // z look to the front.
-                //76543210
-                0b00000100
-            },
-            // y look to the same y value.
-            {
-                // z look to the back.
-                //76543210
-                0b00100010,
-                // z look to the same z value.
-                //76543210
-                0b01100110,
-                // z look to the front.
-                //76543210
-                0b01000100
-            },
-            // y look up.
-            {
-                // z look to the back.
-                //76543210
-                0b00100000,
-                // z look to the same z value.
-                //76543210
-                0b01100000,
-                // z look to the front.
-                //76543210
-                0b01000000
-            }
-        }
-    };
 
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
-        // Get a representive position of this cell. Do not use the corner because it could lead the float precision erros
-        // determining the cell index.
-        int vertex_values[8] = {0};
-        glm::vec3 current_cell_position = this->get_min_corner_from_grid_key(idx_cell) + glm::vec3(0.5f * this->cube_edge_length);
-        for (int look_x = -1; look_x <= 1; look_x++) {
-            for (int look_y = -1; look_y <= 1; look_y++) {
-                for (int look_z = -1; look_z <= 1; look_z++) {
-                    glm::vec3 look_position = current_cell_position + glm::vec3(look_x, look_y, look_z) * this->cube_edge_length;
-                    int idx_neighbor = this->get_grid_key(look_position);
-                    if (idx_neighbor == -1) {
-                        // This cell does not exist. So the current one seems to be at the border.
-                        continue;
-                    }
-                    // If it exists, add the number of particles within this cell to the affected vertices.
-                    for (int vertex_index = 0; vertex_index < 8; vertex_index++) {
-                        if (look_up_bitmask_matrix[look_x + 1][look_y + 1][look_z + 1] & (1 << vertex_index)) {
-                            vertex_values[vertex_index] += this->marching_cubes.at(idx_neighbor).number_of_particles_within;
-                        }
-                    }
-                }
-            }
-        }
-        // Now set the values from the used vector to the struct. Since we cannot use a vector of eight values in the 
-        // shader we need the workaround with single values.
-        this->marching_cubes.at(idx_cell).value_vertex_0 = vertex_values[0];
-        this->marching_cubes.at(idx_cell).value_vertex_1 = vertex_values[1];
-        this->marching_cubes.at(idx_cell).value_vertex_2 = vertex_values[2];
-        this->marching_cubes.at(idx_cell).value_vertex_3 = vertex_values[3];
-        this->marching_cubes.at(idx_cell).value_vertex_4 = vertex_values[4];
-        this->marching_cubes.at(idx_cell).value_vertex_5 = vertex_values[5];
-        this->marching_cubes.at(idx_cell).value_vertex_6 = vertex_values[6];
-        this->marching_cubes.at(idx_cell).value_vertex_7 = vertex_values[7];
+        // Get a representive position of this cell. 
+        glm::vec3 position = this->marching_cubes.at(idx_cell).corner_min;
+        // Set the values.
+        this->marching_cubes.at(idx_cell).value_vertex_0 = this->density_estimator.at(
+            get_grid_key_density_estimator(position));
+        this->marching_cubes.at(idx_cell).value_vertex_1 = this->density_estimator.at(
+            get_grid_key_density_estimator(position + this->cube_edge_length * glm::vec3(1.0f, 0.0f, 0.0f)));
+        this->marching_cubes.at(idx_cell).value_vertex_2 = this->density_estimator.at(
+            get_grid_key_density_estimator(position + this->cube_edge_length * glm::vec3(1.0f, 0.0f, 1.0f)));
+        this->marching_cubes.at(idx_cell).value_vertex_3 = this->density_estimator.at(
+            get_grid_key_density_estimator(position + this->cube_edge_length * glm::vec3(0.0f, 0.0f, 1.0f)));
+        this->marching_cubes.at(idx_cell).value_vertex_4 = this->density_estimator.at(
+            get_grid_key_density_estimator(position + this->cube_edge_length * glm::vec3(0.0f, 1.0f, 0.0f)));
+        this->marching_cubes.at(idx_cell).value_vertex_5 = this->density_estimator.at(
+            get_grid_key_density_estimator(position + this->cube_edge_length * glm::vec3(1.0f, 1.0f, 0.0f)));
+        this->marching_cubes.at(idx_cell).value_vertex_6 = this->density_estimator.at(
+            get_grid_key_density_estimator(position + this->cube_edge_length * glm::vec3(1.0f, 1.0f, 1.0f)));
+        this->marching_cubes.at(idx_cell).value_vertex_7 = this->density_estimator.at(
+            get_grid_key_density_estimator(position + this->cube_edge_length * glm::vec3(0.0f, 1.0f, 1.0f)));
     }
 }
 
@@ -427,21 +295,17 @@ void Marching_Cubes_Generator::generate_marching_cubes ()
         this->calculate_number_of_grid_cells();
         // The marching cubes vector was resized and refilled with empty marching cubes. These no longer hold
         // information about their position in space, so we need to update this once.
-        this->parallel_for(&Marching_Cubes_Generator::set_cube_position, this->number_of_cells);
+        this->parallel_for(&Marching_Cubes_Generator::set_cube_position, this->number_of_cells_marching_cubes);
         // Since we cleared the whole marching cubes grid we do not need to reset the information stored within these
     }
     else {
-        // The marching cubes vector does not need to be resized so we can keep him.
-        // The vector still holds the information about the position of each marching cube.
-        // But the vector also still holds the information about the number of particles within each cube as well
-        // as the vertice attributes. So we need to reset these.
-        this->parallel_for(&Marching_Cubes_Generator::reset_cube_informations, this->number_of_cells);
+        // We can still operate on the datastructures we have but we need to reset the count of the particles to zero.
+        std::fill(this->density_estimator.begin(), this->density_estimator.end(), 0);
     }
     // Calculate the number of particles within each cube. Here are mutex needed.
-    this->parallel_for(&Marching_Cubes_Generator::count_particles, this->particle_system->number_of_particles);
-    // Go through all cubes, look to all sides and adjust the vertex values depending on the values of the neighboring cubes.
-    // Here are no mutex needed.
-    this->parallel_for(&Marching_Cubes_Generator::calculate_vertex_values, this->number_of_cells);
+    this->parallel_for(&Marching_Cubes_Generator::estimate_density, this->particle_system->number_of_particles);
+    // Now update the vertex values for all cubes. Here are no mutex needed.
+    this->parallel_for(&Marching_Cubes_Generator::calculate_vertex_values, this->number_of_cells_marching_cubes);
     // The data changed, so inform the draw call to update the data.
     this->dataChanged = true;
 }
@@ -458,13 +322,13 @@ void Marching_Cubes_Generator::draw (bool unbind)
     // But only if the data changed.
     if (this->dataChanged == true) {
         GLCall( glBindBuffer(GL_ARRAY_BUFFER, this->vertex_buffer_object) );
-        GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Marching_Cube) * this->number_of_cells, &this->marching_cubes.at(0)) );
+        GLCall( glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Marching_Cube) * this->number_of_cells_marching_cubes, &this->marching_cubes.at(0)) );
         GLCall( glBindBuffer(GL_ARRAY_BUFFER, 0) );
         this->dataChanged = false;
     }
     // Draw the marching cubes using the vertex array object.
     GLCall( glBindVertexArray(this->vertex_array_object) );
-    GLCall( glDrawElements(GL_POINTS, this->number_of_cells, GL_UNSIGNED_INT, 0) );
+    GLCall( glDrawElements(GL_POINTS, this->number_of_cells_marching_cubes, GL_UNSIGNED_INT, 0) );
     // In order to save a few unbind-calls, do this only if neccessary. 
     // In our case, the visualization handler will handle the unbinding, so normally we will not unbind here.
     if (unbind == true) {
