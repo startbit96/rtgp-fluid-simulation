@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
 
+# In order that it works with the gcc compiler.
+# (this is not needed for the clang compiler)
+# https://stackoverflow.com/questions/24380456/how-can-i-make-cmake-use-gcc-instead-of-clang-on-mac-os-x
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
+
 project(rtgp_fluid_simulation)
 
 set (CMAKE_CXX_STANDARD 20)
