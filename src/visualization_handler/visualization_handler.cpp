@@ -354,7 +354,7 @@ void Visualization_Handler::visualize ()
         // We only need to deactivate it if the simulation space and the starting positions of the fluid
         // will not be drawn because then the next draw call goes to the particles.
         if ((this->draw_marching_cubes_surface_wireframe == true) && 
-            ((this->draw_marching_cubes_grid == false) && (this->draw_marching_cubes_surface == false))) {
+            ((this->draw_simulation_space == false) && (this->draw_fluid_starting_positions == false))) {
             GLCall( glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) );
         }
     }
