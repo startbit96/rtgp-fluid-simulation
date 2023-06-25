@@ -24,8 +24,8 @@ Visualization_Handler::Visualization_Handler ()
     // Set the initial draw settings.
     this->draw_simulation_space = true;
     this->draw_fluid_starting_positions = false;
-    this->draw_particles = false;
-    this->draw_marching_cubes_surface = true;
+    this->draw_particles = true;
+    this->draw_marching_cubes_surface = false;
     this->draw_marching_cubes_grid = false;
     this->draw_marching_cubes_surface_wireframe = false;
     this->color_simulation_space = glm::vec4(
