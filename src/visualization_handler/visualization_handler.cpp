@@ -152,7 +152,8 @@ void Visualization_Handler::update_external_force_position ()
 void Visualization_Handler::show_imgui_window ()
 {
     // Visual settings.
-    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(700, 700));
+    ImGui::SetNextWindowSize(ImVec2(250, 270), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(750, 170), ImGuiCond_FirstUseEver);
     ImGui::Begin("Visual settings", NULL);
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
     if (ImGui::CollapsingHeader("General settings")) {
@@ -173,7 +174,8 @@ void Visualization_Handler::show_imgui_window ()
     ImGui::End();
 
     // Simulation settings.
-    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(700, 700));
+    ImGui::SetNextWindowSize(ImVec2(250, 500), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
     ImGui::Begin("Simulation settings", NULL);
     // Fluid attributes.
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
@@ -231,7 +233,8 @@ void Visualization_Handler::show_imgui_window ()
     ImGui::End();
 
     // Computational settings.
-    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(700, 700));
+    ImGui::SetNextWindowSize(ImVec2(250, 140), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(750, 20), ImGuiCond_FirstUseEver);
     ImGui::Begin("Computation settings", NULL);
     // Select the computation mode.
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
