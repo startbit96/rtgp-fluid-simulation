@@ -23,11 +23,11 @@ Visualization_Handler::Visualization_Handler ()
     this->update_window_size(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT);
     // Set the initial draw settings.
     this->draw_simulation_space = true;
-    this->draw_fluid_starting_positions = true;
+    this->draw_fluid_starting_positions = false;
     this->draw_particles = true;
-    this->draw_marching_cubes_surface = true;
+    this->draw_marching_cubes_surface = false;
     this->draw_marching_cubes_grid = false;
-    this->draw_marching_cubes_surface_wireframe = true;
+    this->draw_marching_cubes_surface_wireframe = false;
     this->color_simulation_space = glm::vec4(
         SIMULATION_SPACE_COLOR_R,
         SIMULATION_SPACE_COLOR_G,
@@ -151,94 +151,105 @@ void Visualization_Handler::update_external_force_position ()
 
 void Visualization_Handler::show_imgui_window ()
 {
+    // Visual settings.
     ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(700, 700));
-    {
-        ImGui::Begin("Settings", NULL);
-        // Some visual settings.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Visual settings")) {
-            ImGui::Checkbox("show simulation space", &this->draw_simulation_space);
-            ImGui::Checkbox("show initial fluid position", &this->draw_fluid_starting_positions);
-            ImGui::Checkbox("show particles", &this->draw_particles);
-            ImGui::Checkbox("show marching cube surface", &this->draw_marching_cubes_surface);
-            ImGui::Checkbox("wireframe mode marching cube surface", &this->draw_marching_cubes_surface_wireframe);
-            ImGui::Checkbox("show marching cube grid", &this->draw_marching_cubes_grid);
-            ImGui::DragFloat("marching cube grid size", &this->marching_cube_generator.new_cube_edge_length, 
-                MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP, MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN, MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX, "%.4f");
-            ImGui::DragFloat("isovalue", &this->marching_cube_generator.isovalue, 
-                MARCHING_CUBES_ISOVALUE_STEP, MARCHING_CUBES_ISOVALUE_MIN, MARCHING_CUBES_ISOVALUE_MAX, "%.3f");
-        }
-        // Fluid attributes.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Fluid attributes")) {
-            ImGui::DragFloat("particle mass", &this->particle_system->sph_particle_mass, 
-                SPH_PARTICLE_MASS_STEP, SPH_PARTICLE_MASS_MIN, SPH_PARTICLE_MASS_MAX, "%.6f");
-            ImGui::DragFloat("rest density", &this->particle_system->sph_rest_density, 
-                SPH_REST_DENSITY_STEP, SPH_REST_DENSITY_MIN, SPH_REST_DENSITY_MAX, "%.6f");
-            ImGui::DragFloat("gas constant", &this->particle_system->sph_gas_constant, 
-                SPH_GAS_CONSTANT_STEP, SPH_GAS_CONSTANT_MIN, SPH_GAS_CONSTANT_MAX, "%.9f");
-            ImGui::DragFloat("viscosity", &this->particle_system->sph_viscosity, 
-                SPH_VISCOSITY_STEP, SPH_VISCOSITY_MIN, SPH_VISCOSITY_MAX, "%.6f");
-            if (ImGui::Button("reset fluid attributes")) {
-                this->particle_system->reset_fluid_attributes();
-            }
-        }
-        // Select the gravity mode.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Gravity mode")) {
-            for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
-                if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
-                    this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
-            }
-        }
-        // External force attributes.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("External force settings")) {
-            ImGui::Checkbox("enable cursor interaction", &this->particle_system->external_forces_active);
-            ImGui::DragFloat("radius of interaction", &this->particle_system->external_force_radius, 
-                SPH_EXTERNAL_FORCE_RADIUS_STEP, SPH_EXTERNAL_FORCE_RADIUS_MIN, SPH_EXTERNAL_FORCE_RADIUS_MAX, "%.3f");
-            // Shall the external force be repellent or attractive?
-            if (ImGui::RadioButton("repellent", this->particle_system->external_force_direction == EXTERNAL_FORCE_REPELLENT)) { 
-                this->particle_system->external_force_direction = EXTERNAL_FORCE_REPELLENT; 
-            }
-            ImGui::SameLine();
-            if (ImGui::RadioButton("attractive", this->particle_system->external_force_direction == EXTERNAL_FORCE_ATTRACTIVE)) { 
-                this->particle_system->external_force_direction = EXTERNAL_FORCE_ATTRACTIVE; 
-            }
-        }
-        // Collision attributes.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Collision attributes")) {
-            ImGui::DragFloat("reflexion damping", &this->particle_system->collision_reflexion_damping, 
-                SPH_COLLISION_REFLEXION_DAMPING_STEP, SPH_COLLISION_REFLEXION_DAMPING_MIN, SPH_COLLISION_REFLEXION_DAMPING_MAX, "%.3f");
-            ImGui::DragFloat("force damping", &this->particle_system->collision_force_damping, 
-                SPH_COLLISION_FORCE_DAMPING_STEP, SPH_COLLISION_FORCE_DAMPING_MIN, SPH_COLLISION_FORCE_DAMPING_MAX, "%.3f");
-            ImGui::DragFloat("force spring const.", &this->particle_system->collision_force_spring_constant, 
-                SPH_COLLISION_FORCE_SPRING_CONSTANT_STEP, SPH_COLLISION_FORCE_SPRING_CONSTANT_MIN, SPH_COLLISION_FORCE_SPRING_CONSTANT_MAX, "%.3f");
-            ImGui::DragFloat("force distance tol.", &this->particle_system->collision_force_distance_tolerance, 
-                SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_STEP, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MIN, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MAX, "%.3f");
-            if (ImGui::Button("Reset collision attributes")) {
-                this->particle_system->reset_collision_attributes();
-            }
-        }
-        // Select the computation mode.
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Computation mode")) {
-            for (int i = 0; i < static_cast<int>(Computation_Mode::_COMPUTATION_MODE_COUNT); i++) {
-                if (ImGui::Selectable(to_string(static_cast<Computation_Mode>(i)), i == this->particle_system->computation_mode)) {
-                    this->particle_system->change_computation_mode(static_cast<Computation_Mode>(i));
-                }
-            }
-        }
-        // Multithreading
-        ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-        if (ImGui::CollapsingHeader("Multithreading")) {
-            ImGui::DragInt("Number of threads", &this->particle_system->number_of_threads, 
-                0.1f, SIMULATION_NUMBER_OF_THREADS_MIN, SIMULATION_NUMBER_OF_THREADS_MAX, 
-                "%d", ImGuiSliderFlags_AlwaysClamp);
-        }
-        ImGui::End();
+    ImGui::Begin("Visual settings", NULL);
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("General settings")) {
+        ImGui::Checkbox("show simulation space", &this->draw_simulation_space);
+        ImGui::Checkbox("show initial fluid position", &this->draw_fluid_starting_positions);
+        ImGui::Checkbox("show particles", &this->draw_particles);
     }
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("Marching cube settings")) {
+        ImGui::Checkbox("show marching cube surface", &this->draw_marching_cubes_surface);
+        ImGui::Checkbox("wireframe mode", &this->draw_marching_cubes_surface_wireframe);
+        ImGui::Checkbox("show grid", &this->draw_marching_cubes_grid);
+        ImGui::DragFloat("grid size", &this->marching_cube_generator.new_cube_edge_length, 
+            MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP, MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN, MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX, "%.4f");
+        ImGui::DragFloat("isovalue", &this->marching_cube_generator.isovalue, 
+            MARCHING_CUBES_ISOVALUE_STEP, MARCHING_CUBES_ISOVALUE_MIN, MARCHING_CUBES_ISOVALUE_MAX, "%.3f");
+    }
+    ImGui::End();
+
+    // Simulation settings.
+    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(700, 700));
+    ImGui::Begin("Simulation settings", NULL);
+    // Fluid attributes.
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("Fluid attributes")) {
+        ImGui::DragFloat("particle mass", &this->particle_system->sph_particle_mass, 
+            SPH_PARTICLE_MASS_STEP, SPH_PARTICLE_MASS_MIN, SPH_PARTICLE_MASS_MAX, "%.6f");
+        ImGui::DragFloat("rest density", &this->particle_system->sph_rest_density, 
+            SPH_REST_DENSITY_STEP, SPH_REST_DENSITY_MIN, SPH_REST_DENSITY_MAX, "%.6f");
+        ImGui::DragFloat("gas constant", &this->particle_system->sph_gas_constant, 
+            SPH_GAS_CONSTANT_STEP, SPH_GAS_CONSTANT_MIN, SPH_GAS_CONSTANT_MAX, "%.9f");
+        ImGui::DragFloat("viscosity", &this->particle_system->sph_viscosity, 
+            SPH_VISCOSITY_STEP, SPH_VISCOSITY_MIN, SPH_VISCOSITY_MAX, "%.6f");
+        if (ImGui::Button("reset fluid attributes")) {
+            this->particle_system->reset_fluid_attributes();
+        }
+    }
+    // Select the gravity mode.
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("Gravity mode")) {
+        for (int i = 0; i < static_cast<int>(Gravity_Mode::_GRAVITY_MODE_COUNT); i++) {
+            if (ImGui::Selectable(to_string(static_cast<Gravity_Mode>(i)), i == this->particle_system->gravity_mode))
+                this->particle_system->gravity_mode = static_cast<Gravity_Mode>(i);
+        }
+    }
+    // External force attributes.
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("External force settings")) {
+        ImGui::Checkbox("enable cursor interaction", &this->particle_system->external_forces_active);
+        ImGui::DragFloat("radius of interaction", &this->particle_system->external_force_radius, 
+            SPH_EXTERNAL_FORCE_RADIUS_STEP, SPH_EXTERNAL_FORCE_RADIUS_MIN, SPH_EXTERNAL_FORCE_RADIUS_MAX, "%.3f");
+        // Shall the external force be repellent or attractive?
+        if (ImGui::RadioButton("repellent", this->particle_system->external_force_direction == EXTERNAL_FORCE_REPELLENT)) { 
+            this->particle_system->external_force_direction = EXTERNAL_FORCE_REPELLENT; 
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("attractive", this->particle_system->external_force_direction == EXTERNAL_FORCE_ATTRACTIVE)) { 
+            this->particle_system->external_force_direction = EXTERNAL_FORCE_ATTRACTIVE; 
+        }
+    }
+    // Collision attributes.
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("Collision attributes")) {
+        ImGui::DragFloat("reflexion damping", &this->particle_system->collision_reflexion_damping, 
+            SPH_COLLISION_REFLEXION_DAMPING_STEP, SPH_COLLISION_REFLEXION_DAMPING_MIN, SPH_COLLISION_REFLEXION_DAMPING_MAX, "%.3f");
+        ImGui::DragFloat("force damping", &this->particle_system->collision_force_damping, 
+            SPH_COLLISION_FORCE_DAMPING_STEP, SPH_COLLISION_FORCE_DAMPING_MIN, SPH_COLLISION_FORCE_DAMPING_MAX, "%.3f");
+        ImGui::DragFloat("force spring const.", &this->particle_system->collision_force_spring_constant, 
+            SPH_COLLISION_FORCE_SPRING_CONSTANT_STEP, SPH_COLLISION_FORCE_SPRING_CONSTANT_MIN, SPH_COLLISION_FORCE_SPRING_CONSTANT_MAX, "%.3f");
+        ImGui::DragFloat("force distance tol.", &this->particle_system->collision_force_distance_tolerance, 
+            SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_STEP, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MIN, SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MAX, "%.3f");
+        if (ImGui::Button("Reset collision attributes")) {
+            this->particle_system->reset_collision_attributes();
+        }
+    }
+    ImGui::End();
+
+    // Computational settings.
+    ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(700, 700));
+    ImGui::Begin("Computation settings", NULL);
+    // Select the computation mode.
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("Computation mode")) {
+        for (int i = 0; i < static_cast<int>(Computation_Mode::_COMPUTATION_MODE_COUNT); i++) {
+            if (ImGui::Selectable(to_string(static_cast<Computation_Mode>(i)), i == this->particle_system->computation_mode)) {
+                this->particle_system->change_computation_mode(static_cast<Computation_Mode>(i));
+            }
+        }
+    }
+    // Multithreading
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("Multithreading")) {
+        ImGui::DragInt("Number of threads", &this->particle_system->number_of_threads, 
+            0.1f, SIMULATION_NUMBER_OF_THREADS_MIN, SIMULATION_NUMBER_OF_THREADS_MAX, 
+            "%d", ImGuiSliderFlags_AlwaysClamp);
+    }
+    ImGui::End();
 }
 
 
