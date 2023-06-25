@@ -1,4 +1,4 @@
-#version 330 core
+#version 410 core
 
 layout (location = 0) in vec3 position;
 
@@ -39,5 +39,5 @@ void main()
     value_vertex_7_geom = value_vertex_7;
     // Within this project we do not need a model matrix, so only use the 
     // projection matrix and view matrix.
-    gl_Position = u_projection_matrix * u_view_matrix * vec4(position, 1.0);
+    gl_Position = vec4(position, 1.0);
 }

@@ -1,7 +1,7 @@
-#version 330 core
+#version 410 core
 
 layout(points) in;
-layout(triangle_strip, max_vertices = 15) out;
+layout(triangle_strip, max_vertices = 16) out;
 
 // For each triangle we create we will also calculate the normal
 // and pass it to the fragment shader.
@@ -355,14 +355,19 @@ const int triangle_table[256 * 15] = int[](
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 );
 
-vec4 interpolate_point (vec4 point_a, int value_a, vec4 point_b, int value_b)
+vec3 interpolate_point (vec3 point_a, int value_a, vec3 point_b, int value_b)
 {
     // Calculate the interpolation factor based on the difference in values.
     // We want to get the position where the value of the point would be equal to the isovalue.
-    float factor = float(u_isovalue - value_a) / float(value_b - value_a);
+    if (abs(u_isovalue - float(value_a)) < 0.001) {
+        return point_a;
+    }
+    if (abs(u_isovalue - float(value_b)) < 0.001) {
+        return point_b;
+    }
+    float factor = (u_isovalue - float(value_a)) / (float(value_b) - float(value_a));
     // Interpolate the position.
-    vec4 interpolated_position = mix(point_a, point_b, factor);
-    return interpolated_position;
+    return mix(point_a, point_b, factor);
 }
 
 void main()
@@ -379,17 +384,17 @@ void main()
         value_vertex_7_geom[0]
     );
     // Define the vertices. Keep in mind to use the projection and view matrix on them as well.
-    vec4 vertices[8] = vec4[8](
+    vec3 vertices[8] = vec3[8](
         // Bottom vertices.
-        gl_in[0].gl_Position,
-        gl_in[0].gl_Position + u_projection_matrix * u_view_matrix * vec4(u_cube_edge_length, 0.0, 0.0, 0.0),
-        gl_in[0].gl_Position + u_projection_matrix * u_view_matrix * vec4(u_cube_edge_length, 0.0, u_cube_edge_length, 0.0),
-        gl_in[0].gl_Position + u_projection_matrix * u_view_matrix * vec4(0.0, 0.0, u_cube_edge_length, 0.0),
+        gl_in[0].gl_Position.xyz,
+        gl_in[0].gl_Position.xyz + vec3(u_cube_edge_length, 0.0, 0.0),
+        gl_in[0].gl_Position.xyz + vec3(u_cube_edge_length, 0.0, u_cube_edge_length),
+        gl_in[0].gl_Position.xyz + vec3(0.0, 0.0, u_cube_edge_length),
         // Top vertices.
-        gl_in[0].gl_Position + u_projection_matrix * u_view_matrix * vec4(0.0, u_cube_edge_length, 0.0, 0.0),
-        gl_in[0].gl_Position + u_projection_matrix * u_view_matrix * vec4(u_cube_edge_length, u_cube_edge_length, 0.0, 0.0),
-        gl_in[0].gl_Position + u_projection_matrix * u_view_matrix * vec4(u_cube_edge_length, u_cube_edge_length, u_cube_edge_length, 0.0),
-        gl_in[0].gl_Position + u_projection_matrix * u_view_matrix * vec4(0.0, u_cube_edge_length, u_cube_edge_length, 0.0)
+        gl_in[0].gl_Position.xyz + vec3(0.0, u_cube_edge_length, 0.0),
+        gl_in[0].gl_Position.xyz + vec3(u_cube_edge_length, u_cube_edge_length, 0.0),
+        gl_in[0].gl_Position.xyz + vec3(u_cube_edge_length, u_cube_edge_length, u_cube_edge_length),
+        gl_in[0].gl_Position.xyz + vec3(0.0, u_cube_edge_length, u_cube_edge_length)
     );
     
     // There are 2^8 = 256 different possibilities, how the cube can look after 
@@ -416,8 +421,7 @@ void main()
     // this point is, depends on the two vertices that create this edge. Depending on their value,
     // the point will be interpolated.
     // The entry in the edge table tells us what interpolated points we need.
-
-    vec4 interpolated_vertex_list[12];
+    vec3 interpolated_vertex_list[12];
     if ((edge_table[cube_index] & 1) != 0) { // a point along edge 0
         interpolated_vertex_list[0] = interpolate_point(vertices[0], vertex_values[0], vertices[1], vertex_values[1]);
     }
@@ -462,26 +466,30 @@ void main()
     // Depending on the configuration, it can be one or multiple triangles (but at most 5).
     // The -1 in the look up table indicates that there are no more triangles to be drawn for this configuration.
     for (int i = 0; i < 15; i += 3) {
-        if (i == 15)  {
-            break;
-        }
         if (triangle_table[cube_index * 15 + i] == -1) {
             // Nothing more to do.
             break;
         }
-        // Create the triangle.
-        gl_Position = interpolated_vertex_list[triangle_table[cube_index * 15 + i]];
+        // Get the three vertices that will be used for this triangle.
+        vec3 position_a = interpolated_vertex_list[triangle_table[cube_index * 15 + i]];
+        vec3 position_b = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 1]];
+        vec3 position_c = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 2]];
+        // Calculate the normal using the cross product.
+        // It is important to calculate the normal before emitting the vertices ...
+        // It is not enough to define it before EndPrimitive().
+        // Took me half a day to debug this error (-: ...
+        vec3 edge_vector_ab = position_b - position_a;
+        vec3 edge_vector_ac = position_c - position_a;
+        // Use AC x AB so the normals are in the correct direction: showing out of the fluid.
+        vec3 calculated_fragment_normal = normalize(cross(edge_vector_ac, edge_vector_ab));
+        fragment_normal = calculated_fragment_normal;
+        // Create the triangle. Keep in mind to apply the projection and view matrix.
+        gl_Position = u_projection_matrix * u_view_matrix * vec4(position_a, 1.0);
         EmitVertex();
-        gl_Position = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 1]];
+        gl_Position = u_projection_matrix * u_view_matrix * vec4(position_b, 1.0);
         EmitVertex();
-        gl_Position = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 2]];
+        gl_Position = u_projection_matrix * u_view_matrix * vec4(position_c, 1.0);
         EmitVertex();
-        // Calculate the normal.
-        vec3 edge_vector_ab = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 1]].xyz - 
-            interpolated_vertex_list[triangle_table[cube_index * 15 + i]].xyz;
-        vec3 edge_vector_ac = interpolated_vertex_list[triangle_table[cube_index * 15 + i + 2]].xyz - 
-            interpolated_vertex_list[triangle_table[cube_index * 15 + i]].xyz;
-        fragment_normal = normalize(cross(edge_vector_ab, edge_vector_ac));
         EndPrimitive();
     }
 }

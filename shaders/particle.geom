@@ -1,4 +1,4 @@
-#version 330 core
+#version 410 core
 
 // We get the points and want to send the fragment shader a quad.
 // The quad will then be made to a circle by the fragment shader.
