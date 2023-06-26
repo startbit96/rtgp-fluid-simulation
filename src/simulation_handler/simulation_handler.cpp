@@ -9,6 +9,7 @@
 Simulation_Handler::Simulation_Handler()
 {
     this->is_running = true;
+    this->simulate_one_step = false;
     this->current_scene_id = -1;
     this->next_scene_id = -1;
 }
@@ -76,6 +77,12 @@ void Simulation_Handler::simulate ()
 {
     if (this->is_running == true) {
         this->particle_system.simulate();
+    }
+    // Maybe we just want to simulte one step.
+    else if (this->simulate_one_step == true) {
+        this->particle_system.simulate();
+        // Done. Reset the variable then.
+        this->simulate_one_step = false;
     }
 }
 

@@ -255,7 +255,7 @@ void Visualization_Handler::show_imgui_window ()
     ImGui::End();
 
     // At last we print the information about the key bindings from the input handler to the screen using imgui.
-    ImGui::SetNextWindowSize(ImVec2(320, 230), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(320, 240), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(680, 450), ImGuiCond_FirstUseEver);
     ImGui::Begin("Key bindings", NULL);
     // We need some flags for the table. This was copy pasted from the imgui demo.

@@ -116,6 +116,7 @@ void rtgp_application()
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_R, reload_scene, "RELOAD SCENE") );
                 // Simulation related input.
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION") );
+                ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_S, simulate_one_step, "SIMULATE ONE STEP (IF PAUSED)") );
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES") );
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_DOWN, decrease_number_of_particles, "DECREASE NUMBER OF PARTICLES") );
                 // We now want to be able to print this information also in an imgui window. So make the visualization handler aware of the key bindings.
@@ -221,6 +222,14 @@ void switch_scene (int scene_id)
 void pause_resume_simulation ()
 {
     application_handler.simulation_handler.toggle_pause_resume_simulation();
+}
+
+void simulate_one_step ()
+{
+    // Only do this if the simulation is paused.
+    if (application_handler.simulation_handler.is_running == false) {
+        application_handler.simulation_handler.simulate_one_step = true;
+    }
 }
 
 void increase_number_of_particles ()

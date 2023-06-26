@@ -13,7 +13,12 @@ class Simulation_Handler
         void calculate_initial_particle_positions ();
 
     public:
+        // The is_running bool is used to pause and resume the simulation.
         bool is_running;
+        // If the simulation is paused we also want to be able to perform only one simulation step.
+        // Note that this only works if the simulation is paused.
+        bool simulate_one_step;
+        // Scene handling.
         int current_scene_id;
         int next_scene_id;
         std::vector<Scene_Information> available_scenes;
