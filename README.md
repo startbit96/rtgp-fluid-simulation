@@ -1,7 +1,7 @@
 # rtgp-fluid-simulation
 Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time Graphics Programming"](https://www.unimi.it/en/education/degree-programme-courses/2023/real-time-graphics-programming) at the [Università degli Studi di Milano Statale](https://www.unimi.it/en).
 
-![example screenshot](./assets/20230612_screenshot.png)
+![example screenshot](./assets/20230626_screenshot.png)
 
 ## Features
 * Real-time fluid simulation using the Smoothed Particles Hydrodynamics method (SPH).
