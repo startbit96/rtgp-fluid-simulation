@@ -118,6 +118,10 @@ void rtgp_application()
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_SPACE, pause_resume_simulation, "PAUSE / RESUME THE SIMULATION") );
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_UP, increase_number_of_particles, "INCREASE NUMBER OF PARTICLES") );
                 ASSERT( application_handler.input_handler.add_input_behaviour(INPUT_BEHAVIOR_SIMULATION, GLFW_KEY_DOWN, decrease_number_of_particles, "DECREASE NUMBER OF PARTICLES") );
+                // We now want to be able to print this information also in an imgui window. So make the visualization handler aware of the key bindings.
+                // We are only interested in the simulation input behavior.
+                ASSERT( application_handler.input_handler.create_key_binding_list(INPUT_BEHAVIOR_SIMULATION, 
+                    application_handler.visualization_handler.key_list, application_handler.visualization_handler.reaction_description_list) );
                 // Activate the IDLE-input-context (this is used for everything but the running simulation).
                 if (application_handler.input_handler.change_input_context(INPUT_BEHAVIOR_IDLE) == false) {
                     // Something went wrong. Terminate the application.

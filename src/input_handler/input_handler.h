@@ -31,4 +31,7 @@ class Input_Handler {
         // Passes the vector of the pressed keys down to the active input context.
         void check_and_execute ();
         void print_information ();
+        // For the visualization handler to be able to print the key bindings in a table we will need to 
+        // create a key - reaction string pair for a given input context. 
+        bool create_key_binding_list (int context_id, std::vector<std::string> &key_list, std::vector<std::string> &reaction_description_list);
 };

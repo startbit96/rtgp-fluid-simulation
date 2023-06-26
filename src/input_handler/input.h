@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 // An input consists of a reaction that gets executed when the specified
 // key is pressed. The description is used to describe the reaction of the 
@@ -26,4 +27,8 @@ class Input {
 
         // Prints the input behaviour to the console.
         void print_information ();
+
+        // For the visualization handler to be able to print the key bindings in a table we will need to 
+        // create a key - reaction string pair. Using this function the input adds himself to this list.
+        void add_key_binding_to_list (std::vector<std::string> &key_list, std::vector<std::string> &reaction_description_list);
 };

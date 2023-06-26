@@ -37,3 +37,14 @@ void Input_Context::print_information ()
         input.print_information();
     }
 }
+
+void Input_Context::create_key_binding_list (std::vector<std::string> &key_list, std::vector<std::string> &reaction_description_list)
+{
+    // Delete the old lists.
+    key_list.clear();
+    reaction_description_list.clear();
+    // Fill the lists. Each input adds himself.
+    for (Input &input : this->registered_inputs) {
+        input.add_key_binding_to_list(key_list, reaction_description_list);
+    }
+}

@@ -103,3 +103,15 @@ void Input_Handler::print_information ()
         std::cout << std::endl;
     }
 }
+
+bool Input_Handler::create_key_binding_list (int context_id, std::vector<std::string> &key_list, std::vector<std::string> &reaction_description_list)
+{
+    // Check if this input context exists.
+    if (this->input_contexts.contains(context_id) == true) {
+        this->input_contexts[context_id].create_key_binding_list(key_list, reaction_description_list);
+        return true;
+    }
+    else {
+        return false;
+    }
+}

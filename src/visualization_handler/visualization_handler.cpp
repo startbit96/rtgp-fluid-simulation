@@ -253,6 +253,32 @@ void Visualization_Handler::show_imgui_window ()
             "%d", ImGuiSliderFlags_AlwaysClamp);
     }
     ImGui::End();
+
+    // At last we print the information about the key bindings from the input handler to the screen using imgui.
+    ImGui::SetNextWindowSize(ImVec2(320, 230), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(680, 450), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Key bindings", NULL);
+    // We need some flags for the table. This was copy pasted from the imgui demo.
+    static ImGuiTableFlags table_flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | 
+        ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+    if (ImGui::BeginTable("Key binding table", 2, table_flags))
+    {
+        ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Reaction", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+        for (int row = 0; row < this->key_list.size(); row++)
+        {
+            ImGui::TableNextRow();
+            // The first column will contain the keys.
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted(this->key_list.at(row).c_str());
+            // The second column will contain the reaction description.
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextUnformatted(this->reaction_description_list.at(row).c_str());
+        }
+        ImGui::EndTable();
+    }
+    ImGui::End();
 }
 
 

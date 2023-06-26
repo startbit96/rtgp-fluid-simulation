@@ -97,6 +97,14 @@ class Visualization_Handler
         // Our camera that handles the calculation of the view matrix.
         // It is an arc ball camera.
         Camera camera;
+        // Within the window we also show some imgui windows for user interaction. The information about
+        // the key bindings handled by the input handler is printed to the terminal. In order that the user
+        // is really aware of these key bindings (maybe the user oversees it in the terminal) we also print
+        // them in a table in an imgui window. Therefore we need this information from the input handler.
+        // The input handler will fill a vector containing the keys as string as well as the respective 
+        // reaction if this key is pressed as a string.
+        std::vector<std::string> key_list;
+        std::vector<std::string> reaction_description_list;
 
         // Marching cubes generator.
         Marching_Cubes_Generator marching_cube_generator;

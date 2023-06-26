@@ -27,6 +27,12 @@ void Input::print_information ()
         "\t ==> " << this->description << std::endl;
 }
 
+void Input::add_key_binding_to_list (std::vector<std::string> &key_list, std::vector<std::string> &reaction_description_list)
+{
+    key_list.push_back(Input::get_key_name(this->key));
+    reaction_description_list.push_back(this->description);
+}
+
 std::string Input::get_key_name (int key)
 {
     switch (key) {
