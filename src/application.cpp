@@ -8,6 +8,9 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
+// For more details see performance_test.h:
+std::unordered_map<std::string, std::vector<long long>> execution_times;
+
 Application_Handler application_handler;
 
 void rtgp_application()
@@ -155,6 +158,10 @@ void rtgp_application()
                 application_handler.visualization_handler.delete_shaders();
                 // Terminate.
                 application_handler.terminate();
+                // Save the performance data if wished.
+                #ifdef PERFORMANCE_TEST
+                save_exection_time_to_csv();
+                #endif
                 break;
             case SIMULATION_INITIALIZATION:
                 // This state is used for loading the new scene or reloading the current scene.
