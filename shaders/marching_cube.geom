@@ -481,8 +481,7 @@ void main()
         vec3 edge_vector_ab = position_b - position_a;
         vec3 edge_vector_ac = position_c - position_a;
         // Use AC x AB so the normals are in the correct direction: showing out of the fluid.
-        vec3 calculated_fragment_normal = normalize(cross(edge_vector_ac, edge_vector_ab));
-        fragment_normal = calculated_fragment_normal;
+        fragment_normal = normalize(cross(edge_vector_ac, edge_vector_ab));
         // Create the triangle. Keep in mind to apply the projection and view matrix.
         gl_Position = u_projection_matrix * u_view_matrix * vec4(position_a, 1.0);
         EmitVertex();
