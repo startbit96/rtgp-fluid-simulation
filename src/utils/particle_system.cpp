@@ -729,7 +729,7 @@ void Particle_System::simulate_spatial_grid ()
     // Create the spatial grid.
     this->spatial_grid.clear();
     this->spatial_grid.resize(this->number_of_cells);
-    MEASURE_EXECUTION_TIME( this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles) );
+    this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles);
     // Calculate the density and the pressure for each particle using multiple threads.
     MEASURE_EXECUTION_TIME( this->parallel_for_grid(&Particle_System::calculate_density_pressure_spatial_grid) );
     // Calculate the forces and acceleration using multiple threads.
@@ -742,7 +742,7 @@ void Particle_System::simulate_spatial_grid ()
     // This was also implemented and compared to the clear-and-generate-new-method we use now it
     // had no benefit in execution time. The last commit the update-grid-method was still implemented
     // is "f1ab3e1".
-    MEASURE_EXECUTION_TIME( this->update_particle_vector() );
+    this->update_particle_vector();
 }
 
 

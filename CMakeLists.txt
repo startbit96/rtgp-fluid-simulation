@@ -104,7 +104,7 @@ set(INCLUDE_FILES
 # Do we want to debug OpenGL errors? If so, uncomment this.
 add_definitions(-DOPENGL_DEBUG)
 # Do we want to measure the performance? If so, uncomment this.
-add_definitions(-DPERFORMANCE_TEST)
+#add_definitions(-DPERFORMANCE_TEST)
 
 # Our executable.
 add_executable(rtgp_fluid_simulation ${SOURCE_FILES} ${INCLUDE_FILES})

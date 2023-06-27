@@ -18,10 +18,10 @@
 // Also note that if the factor is 2 that does not mean the number of 
 // particles doubles but since we are in 3D it is 2^3 = 8 times the 
 // number of particles.
-#define PARTICLE_INITIAL_DISTANCE_INIT          0.064f * sqrt(2)
+#define PARTICLE_INITIAL_DISTANCE_INIT          0.081f
 #define PARTICLE_INITIAL_DISTANCE_MIN           0.008f
 #define PARTICLE_INITIAL_DISTANCE_MAX           0.256f
-#define PARTICLE_INITIAL_DISTANCE_INC_FACTOR    sqrt(2)
+#define PARTICLE_INITIAL_DISTANCE_INC_FACTOR    pow(2.0f, 1.0f / 3.0f)
 // SPH related defines. Define here the initial values for the simulation.
 // Define here also the min, max values and the step size for the imgui sliders.
 // Particles mass in kg.
