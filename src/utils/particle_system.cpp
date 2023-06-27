@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "debug.h"
+#include "performance_test.h"
 #include "helper.h"
 
 Particle_System::Particle_System ()
@@ -523,11 +524,11 @@ void Particle_System::calculate_verlet_step_brute_force (unsigned int index_star
 void Particle_System::simulate_brute_force ()
 {
     // Calculate the density and the pressure for each particle.
-    this->parallel_for(&Particle_System::calculate_density_pressure_brute_force, this->number_of_particles);
+    MEASURE_EXECUTION_TIME( this->parallel_for(&Particle_System::calculate_density_pressure_brute_force, this->number_of_particles) );
     // Calculate the forces and acceleration.
-    this->parallel_for(&Particle_System::calculate_acceleration_brute_force, this->number_of_particles);
+    MEASURE_EXECUTION_TIME( this->parallel_for(&Particle_System::calculate_acceleration_brute_force, this->number_of_particles) );
     // Calculate the new positions and velocities.
-    this->parallel_for(&Particle_System::calculate_verlet_step_brute_force, this->number_of_particles);
+    MEASURE_EXECUTION_TIME( this->parallel_for(&Particle_System::calculate_verlet_step_brute_force, this->number_of_particles) );
 }
 
 
@@ -728,20 +729,20 @@ void Particle_System::simulate_spatial_grid ()
     // Create the spatial grid.
     this->spatial_grid.clear();
     this->spatial_grid.resize(this->number_of_cells);
-    this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles);
+    MEASURE_EXECUTION_TIME( this->parallel_for(&Particle_System::generate_spatial_grid, this->number_of_particles) );
     // Calculate the density and the pressure for each particle using multiple threads.
-    this->parallel_for_grid(&Particle_System::calculate_density_pressure_spatial_grid);
+    MEASURE_EXECUTION_TIME( this->parallel_for_grid(&Particle_System::calculate_density_pressure_spatial_grid) );
     // Calculate the forces and acceleration using multiple threads.
-    this->parallel_for_grid(&Particle_System::calculate_acceleration_spatial_grid);
+    MEASURE_EXECUTION_TIME( this->parallel_for_grid(&Particle_System::calculate_acceleration_spatial_grid) );
     // Calculate the new positions and apply collision handling using multiple threads.
-    this->parallel_for_grid(&Particle_System::calculate_verlet_step_spatial_grid);
+    MEASURE_EXECUTION_TIME( this->parallel_for_grid(&Particle_System::calculate_verlet_step_spatial_grid) );
     // Get the updated particles vector. We operated until here on the grid.
     // Another solution was to update the grid itself (so iterate over all grid cells and over
     // their particles and check if a particle has to be moved to another cell after this step).
     // This was also implemented and compared to the clear-and-generate-new-method we use now it
     // had no benefit in execution time. The last commit the update-grid-method was still implemented
     // is "f1ab3e1".
-    this->update_particle_vector();
+    MEASURE_EXECUTION_TIME( this->update_particle_vector() );
 }
 
 

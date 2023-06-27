@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "utils/debug.h"
+#include "utils/performance_test.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -183,9 +184,9 @@ void rtgp_application()
                 // casted by the mouse cursor. Update these values.
                 application_handler.visualization_handler.update_external_force_position();
                 // Calculate the next simulation step.
-                application_handler.simulation_handler.simulate();
+                MEASURE_EXECUTION_TIME( application_handler.simulation_handler.simulate() );
                 // Update the visualization.
-                application_handler.visualization_handler.visualize();
+                MEASURE_EXECUTION_TIME( application_handler.visualization_handler.visualize() );
                 break;
             case SIMULATION_TERMINATION:
                 // Load the next requested simulation.

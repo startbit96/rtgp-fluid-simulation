@@ -388,7 +388,7 @@ void Visualization_Handler::visualize ()
         this->marching_cube_shader->set_uniform_1f("u_cube_edge_length", this->marching_cube_generator.cube_edge_length);
         // Set the isovalue to be used in the marching cubes algorithm.
         this->marching_cube_shader->set_uniform_1f("u_isovalue", this->marching_cube_generator.isovalue);
-        // Draw the grid.
+        // Draw the surface of the fluid.
         this->marching_cube_generator.draw();
         // Deactivate the wireframe mode if necessary.
         // We only need to deactivate it if the simulation space and the starting positions of the fluid
