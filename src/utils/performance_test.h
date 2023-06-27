@@ -7,8 +7,6 @@
 // to determine the time different functions take as well as to compare e.g., the brute
 // force implementation of the SPH algorithm against the spatial grid implementation.
 
-// #define PERFORMANCE_TEST true
-
 #ifdef PERFORMANCE_TEST
 #define MEASURE_EXECUTION_TIME(function_to_be_measured)\
     do {\

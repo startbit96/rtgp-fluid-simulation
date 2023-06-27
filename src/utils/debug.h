@@ -7,13 +7,11 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define DEBUG true
-
 // ====================================== OPENGL RELATED DEBUG ======================================
 
 // This helps finding errors in the code. If a called function returns false, 
 // this raises an error. With this we also get the exact line in the code.
-#ifdef DEBUG
+#ifdef OPENGL_DEBUG
 #define ASSERT(x) if (!(x)) assert(false)
 #else
 #define ASSERT(x) x
@@ -69,7 +67,7 @@ bool inline GLCheckError()
 
 // This macro / function clears first the error buffer, then calls the desired function
 // and then checks if an OpenGL error occured and if so it prints the error message.
-#ifdef DEBUG
+#ifdef OPENGL_DEBUG
 #define GLCall(x) GLClearError();\
     x;\
     ASSERT(GLCheckError())
