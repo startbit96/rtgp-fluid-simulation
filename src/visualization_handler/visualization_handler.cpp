@@ -13,7 +13,6 @@
 
 #include "../utils/cuboid.h"
 #include "../utils/debug.h"
-#include "../utils/performance_test.h"
 
 Visualization_Handler::Visualization_Handler ()
 {
