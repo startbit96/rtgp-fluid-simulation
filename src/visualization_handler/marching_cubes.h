@@ -20,9 +20,9 @@
 
 // The edge length of a single marching cube. The less the edge length, the higher the resolution.
 #define MARCHING_CUBES_CUBE_EDGE_LENGTH         0.1f
-#define MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN     0.005f
-#define MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX     0.2f
-#define MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP    0.0001f
+#define MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN     0.05f
+#define MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX     0.3f
+#define MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP    0.001f
 // The isovalue used in the marching cubes algorithm to determine if a vertex is within the object
 // or outside. Since we simple count the number of particles in the marching cube and apply this value
 // to the neighboring cubes vertices, we use int values here.

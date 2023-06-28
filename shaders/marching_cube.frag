@@ -10,7 +10,7 @@ void main()
     // We apply a simple shadow using the Lambert model.
     // The light will come from this direction, use global coordinates here. The calculated normal
     // from the geometry shader is also in global coordinates.
-    vec3 light_direction = normalize(vec3(1.0, 1.0, 1.0));
+    vec3 light_direction = normalize(vec3(1.0, 10.0, 1.0));
 
     // Calculate the diffuse component using Lambertian illumination model.
     vec3 light_color = vec3(1.0, 1.0, 1.0);
