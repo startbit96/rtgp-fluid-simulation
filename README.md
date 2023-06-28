@@ -10,8 +10,8 @@ Real-time fluid simulation made in C++ using OpenGL for the course ["Real-Time G
 * Mouse cursor interaction with particles (apply external force).
 * Fluid rendering using the Marching Cubes algorithm.
 
-## Benchmarking
-to do: graph with different numbers of particles and fps, compare brute force to spatial grid
+## Performance
+![performance analysis](./doc/performance_analysis/execution_time_and_fps.png)
 
 ## Dependencies
 
