@@ -57,6 +57,18 @@ $ make
 Run the application with `./rtgp_fluid_simulation` within the build directory.  
 Note that because of relative paths for loading the shaders, you cannot run the program from within the repositories main directory.  
 
+The compiler to be used can be specified during the `cmake ..` call. Normally, it takes the systems default compiler, but it can be specified like in these examples for the clang or gcc compiler.  
+
+```
+$ cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ..
+```
+
+or
+
+```
+$ cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ..
+```
+
 If an error occurs while installing the application, make sure, that you have installed all the mentioned dependencies.  
 ### Key Bindings
 The fluids parameters and some simulation settings can be adapted using the graphical user interface.  
