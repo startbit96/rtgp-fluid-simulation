@@ -508,13 +508,15 @@ void Particle_System::calculate_verlet_step_brute_force (unsigned int index_star
 {
     // Compute the new position and new velocity using the velocity verlet integration.
     for (int i = index_start; i <= index_end; i++) {
-        float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
+        static float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
         glm::vec3 new_position = this->particles.at(i).position + 
             this->particles.at(i).velocity * SPH_SIMULATION_TIME_STEP + 
-            this->particles.at(i).acceleration * time_step_squared;
-        glm::vec3 new_velocity = (new_position - this->particles.at(i).position) / SPH_SIMULATION_TIME_STEP;
+            0.5f * this->particles.at(i).old_acceleration * time_step_squared;
+        glm::vec3 new_velocity = this->particles.at(i).velocity + 
+            0.5f * (this->particles.at(i).acceleration + this->particles.at(i).old_acceleration) * SPH_SIMULATION_TIME_STEP;
         this->particles.at(i).position = new_position;
         this->particles.at(i).velocity = new_velocity;
+        this->particles.at(i).old_acceleration = this->particles.at(i).acceleration;
 
         // Resolve collision. Make sure every particle is still in the simulation space.
         this->resolve_collision_relfexion_method(this->particles.at(i));
@@ -701,13 +703,14 @@ void Particle_System::calculate_verlet_step_spatial_grid (unsigned int index_sta
     for (int idx_cell = index_start; idx_cell <= index_end; idx_cell++) {
         // Calculate for each particle in this cell the new position and velocity and resolve collision.
         for (Particle& particle : this->spatial_grid.at(idx_cell)) {
-            float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
+            static float time_step_squared = pow(SPH_SIMULATION_TIME_STEP, 2);
             glm::vec3 new_position = particle.position + 
                 particle.velocity * SPH_SIMULATION_TIME_STEP + 
-                particle.acceleration * time_step_squared;
-            glm::vec3 new_velocity = (new_position - particle.position) / SPH_SIMULATION_TIME_STEP;
+                0.5f * particle.old_acceleration * time_step_squared;
+            glm::vec3 new_velocity = particle.velocity + 0.5f * (particle.acceleration + particle.old_acceleration) * SPH_SIMULATION_TIME_STEP;
             particle.position = new_position;
             particle.velocity = new_velocity;
+            particle.old_acceleration = particle.acceleration;
 
             // Resolve collision. Make sure every particle is still in the simulation space.
             this->resolve_collision_relfexion_method(particle);

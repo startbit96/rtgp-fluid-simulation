@@ -9,6 +9,7 @@ Particle get_default_particle(float x, float y, float z)
         1000.0f,
         1000.0f,
         glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 0.0f)
     };
 }
@@ -36,5 +37,9 @@ void describe_particle_memory_layout ()
     // Acceleration.
     GLCall( glEnableVertexAttribArray(index) );
     GLCall( glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (GLvoid*)(offsetof(Particle, acceleration))) );
+    index++;
+    // Old acceleration.
+    GLCall( glEnableVertexAttribArray(index) );
+    GLCall( glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, sizeof(Particle), (GLvoid*)(offsetof(Particle, old_acceleration))) );
     index++;
 }

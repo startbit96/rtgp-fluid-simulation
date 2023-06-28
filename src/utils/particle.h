@@ -11,6 +11,8 @@ struct Particle
     GLfloat pressure;
     glm::vec3 velocity;
     glm::vec3 acceleration;
+    // For the velocity verlet integration we also need the old acceleration.
+    glm::vec3 old_acceleration;
 };
 
 // A function that returns particle based on the given x, y, z position.
