@@ -22,7 +22,7 @@ Visualization_Handler::Visualization_Handler ()
     // Calculate the aspect ratio and the projection matrix.
     this->update_window_size(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT);
     // Set the initial draw settings.
-    this->draw_simulation_space = true;
+    this->draw_simulation_space = false;
     this->draw_fluid_starting_positions = false;
     this->draw_particles = true;
     this->draw_marching_cubes_surface = false;

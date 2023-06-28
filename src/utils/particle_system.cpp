@@ -296,29 +296,29 @@ void Particle_System::resolve_collision_relfexion_method (Particle& particle)
     // and apply a collision damping.
     // x.
     if (particle.position.x < this->simulation_space->x_min) {
-        particle.position.x = this->simulation_space->x_min;
+        particle.position.x = this->simulation_space->x_min + SPH_COLLISION_REFLEXION_RESET_DISTANCE;
         particle.velocity.x = -particle.velocity.x * (1.0f - this->collision_reflexion_damping);
     }
-    else if (particle.position.x > this->simulation_space->x_max) {
-        particle.position.x = this->simulation_space->x_max;
+    else if (particle.position.x >= this->simulation_space->x_max) {
+        particle.position.x = this->simulation_space->x_max - SPH_COLLISION_REFLEXION_RESET_DISTANCE;
         particle.velocity.x = -particle.velocity.x * (1.0f - this->collision_reflexion_damping);
     }
     // y.
     if (particle.position.y < this->simulation_space->y_min) {
-        particle.position.y = this->simulation_space->y_min;
+        particle.position.y = this->simulation_space->y_min + SPH_COLLISION_REFLEXION_RESET_DISTANCE;
         particle.velocity.y = -particle.velocity.y * (1.0f - this->collision_reflexion_damping);
     }
-    else if (particle.position.y > this->simulation_space->y_max) {
-        particle.position.y = this->simulation_space->y_max;
+    else if (particle.position.y >= this->simulation_space->y_max) {
+        particle.position.y = this->simulation_space->y_max - SPH_COLLISION_REFLEXION_RESET_DISTANCE;
         particle.velocity.y = -particle.velocity.y * (1.0f - this->collision_reflexion_damping);
     }
     // z.
     if (particle.position.z < this->simulation_space->z_min) {
-        particle.position.z = this->simulation_space->z_min;
+        particle.position.z = this->simulation_space->z_min + SPH_COLLISION_REFLEXION_RESET_DISTANCE;
         particle.velocity.z = -particle.velocity.z * (1.0f - this->collision_reflexion_damping);
     }
-    else if (particle.position.z > this->simulation_space->z_max) {
-        particle.position.z = this->simulation_space->z_max;
+    else if (particle.position.z >= this->simulation_space->z_max) {
+        particle.position.z = this->simulation_space->z_max - SPH_COLLISION_REFLEXION_RESET_DISTANCE;
         particle.velocity.z = -particle.velocity.z * (1.0f - this->collision_reflexion_damping);
     }
 }
@@ -565,9 +565,9 @@ inline int Particle_System::get_grid_key (glm::vec3 position)
     // We move the particles position into positive values.
     position = position + this->particle_offset;
     // Check if the position is within the grids volume.
-    if ((position.x < 0.0f) || (position.x > this->number_of_cells_x * this->sph_kernel_radius) ||
-        (position.y < 0.0f) || (position.y > this->number_of_cells_y * this->sph_kernel_radius) ||
-        (position.z < 0.0f) || (position.z > this->number_of_cells_z * this->sph_kernel_radius)) {
+    if ((position.x < 0.0f) || (position.x >= this->number_of_cells_x * this->sph_kernel_radius) ||
+        (position.y < 0.0f) || (position.y >= this->number_of_cells_y * this->sph_kernel_radius) ||
+        (position.z < 0.0f) || (position.z >= this->number_of_cells_z * this->sph_kernel_radius)) {
             return -1;
     }
     return

@@ -58,16 +58,17 @@
 #define SPH_COLLISION_REFLEXION_DAMPING_MIN         0.0f
 #define SPH_COLLISION_REFLEXION_DAMPING_MAX         1.0f
 #define SPH_COLLISION_REFLEXION_DAMPING_STEP        0.005f
+#define SPH_COLLISION_REFLEXION_RESET_DISTANCE      0.001f
 // Damping constant for the spring damper system.
 #define SPH_COLLISION_FORCE_DAMPING                 5.0f
 #define SPH_COLLISION_FORCE_DAMPING_MIN             0.1f
 #define SPH_COLLISION_FORCE_DAMPING_MAX             100.0f
 #define SPH_COLLISION_FORCE_DAMPING_STEP            0.05f
 // Spring constant for the spring damper system.
-#define SPH_COLLISION_FORCE_SPRING_CONSTANT         1000.0f
+#define SPH_COLLISION_FORCE_SPRING_CONSTANT         100.0f
 #define SPH_COLLISION_FORCE_SPRING_CONSTANT_MIN     1.0f
 #define SPH_COLLISION_FORCE_SPRING_CONSTANT_MAX     2000.0f
-#define SPH_COLLISION_FORCE_SPRING_CONSTANT_STEP    0.1f
+#define SPH_COLLISION_FORCE_SPRING_CONSTANT_STEP    0.5f
 // When should the collision force be applied? (only for the force method)
 #define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE      0.1f
 #define SPH_COLLISION_FORCE_DISTANCE_TOLERANCE_MIN  0.01f
