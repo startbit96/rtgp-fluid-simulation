@@ -151,28 +151,6 @@ void Visualization_Handler::update_external_force_position ()
 
 void Visualization_Handler::show_imgui_window ()
 {
-    // Visual settings.
-    ImGui::SetNextWindowSize(ImVec2(250, 270), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(750, 170), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Visual settings", NULL);
-    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-    if (ImGui::CollapsingHeader("General settings")) {
-        ImGui::Checkbox("show simulation space", &this->draw_simulation_space);
-        ImGui::Checkbox("show initial fluid position", &this->draw_fluid_starting_positions);
-        ImGui::Checkbox("show particles", &this->draw_particles);
-    }
-    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
-    if (ImGui::CollapsingHeader("Marching cube settings")) {
-        ImGui::Checkbox("show marching cube surface", &this->draw_marching_cubes_surface);
-        ImGui::Checkbox("wireframe mode", &this->draw_marching_cubes_surface_wireframe);
-        ImGui::Checkbox("show grid", &this->draw_marching_cubes_grid);
-        ImGui::DragFloat("grid size", &this->marching_cube_generator.new_cube_edge_length, 
-            MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP, MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN, MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX, "%.4f");
-        ImGui::DragFloat("isovalue", &this->marching_cube_generator.isovalue, 
-            MARCHING_CUBES_ISOVALUE_STEP, MARCHING_CUBES_ISOVALUE_MIN, MARCHING_CUBES_ISOVALUE_MAX, "%.3f");
-    }
-    ImGui::End();
-
     // Simulation settings.
     ImGui::SetNextWindowSize(ImVec2(250, 500), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
@@ -232,9 +210,32 @@ void Visualization_Handler::show_imgui_window ()
     }
     ImGui::End();
 
+
+    // Visual settings.
+    ImGui::SetNextWindowSize(ImVec2(250, 270), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(750, 20), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Visual settings", NULL);
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("General settings")) {
+        ImGui::Checkbox("show simulation space", &this->draw_simulation_space);
+        ImGui::Checkbox("show initial fluid position", &this->draw_fluid_starting_positions);
+        ImGui::Checkbox("show particles", &this->draw_particles);
+    }
+    ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
+    if (ImGui::CollapsingHeader("Marching cube settings")) {
+        ImGui::Checkbox("show marching cube surface", &this->draw_marching_cubes_surface);
+        ImGui::Checkbox("wireframe mode", &this->draw_marching_cubes_surface_wireframe);
+        ImGui::Checkbox("show grid", &this->draw_marching_cubes_grid);
+        ImGui::DragFloat("grid size", &this->marching_cube_generator.new_cube_edge_length, 
+            MARCHING_CUBES_CUBE_EDGE_LENGTH_STEP, MARCHING_CUBES_CUBE_EDGE_LENGTH_MIN, MARCHING_CUBES_CUBE_EDGE_LENGTH_MAX, "%.4f");
+        ImGui::DragFloat("isovalue", &this->marching_cube_generator.isovalue, 
+            MARCHING_CUBES_ISOVALUE_STEP, MARCHING_CUBES_ISOVALUE_MIN, MARCHING_CUBES_ISOVALUE_MAX, "%.3f");
+    }
+    ImGui::End();
+
     // Computational settings.
     ImGui::SetNextWindowSize(ImVec2(250, 140), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(750, 20), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(750, 300), ImGuiCond_FirstUseEver);
     ImGui::Begin("Computation settings", NULL);
     // Select the computation mode.
     ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);

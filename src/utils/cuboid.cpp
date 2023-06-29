@@ -103,9 +103,9 @@ float Cuboid::get_volume ()
 glm::vec3 Cuboid::get_point_of_interest ()
 {
     return glm::vec3(
-        (this->x_min + this->x_max) / 2,
-        (this->y_min + this->y_max) / 2,
-        (this->z_min + this->z_max) / 2
+        (this->x_min + this->x_max) * 0.5f,
+        (this->y_min + this->y_max) * 0.5f,
+        (this->z_min + this->z_max) * 0.5f
     );
 }
 

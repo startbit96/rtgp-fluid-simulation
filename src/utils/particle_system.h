@@ -51,7 +51,7 @@
 #define SPH_EXTERNAL_FORCE_RADIUS               0.2f
 #define SPH_EXTERNAL_FORCE_RADIUS_MIN           0.05f
 #define SPH_EXTERNAL_FORCE_RADIUS_MAX           1.0f
-#define SPH_EXTERNAL_FORCE_RADIUS_STEP          0.01f
+#define SPH_EXTERNAL_FORCE_RADIUS_STEP          0.001f
 #define SPH_EXTERNAL_FORCE_MAGNITUDE            100.0f
 // Collision handling.
 #define SPH_COLLISION_REFLEXION_DAMPING             0.5f
