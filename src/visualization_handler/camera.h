@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define CAMERA_INITIAL_YAW_DEG          45.0f
+#define CAMERA_INITIAL_YAW_DEG          135.0f
 #define CAMERA_INITIAL_PITCH_DEG        20.0f
 #define CAMERA_MAX_PITCH_DEG            80.0f
 #define CAMERA_MIN_PITCH_DEG            -80.0f
