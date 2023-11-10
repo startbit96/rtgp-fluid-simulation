@@ -3,6 +3,7 @@ build/
 out/
 .DS_Store
 imgui.ini
+.direnv
 
 # cmake related files (from the cmake-gitignore template):
 CMakeLists.txt.user

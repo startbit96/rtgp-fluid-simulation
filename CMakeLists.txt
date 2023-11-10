@@ -37,6 +37,11 @@ if(NOT glm_FOUND)
     message(FATAL_ERROR "glm package not found")
 endif()
 
+find_library(APPLICATION_SERVICES ApplicationServices)
+if (NOT APPLICATION_SERVICES)
+    message(FATAL_ERROR "ApplicationServices not found")
+endif()
+
 # List the source files explicitly.
 # It is not recommended to use glob.
 # https://stackoverflow.com/questions/1027247/is-it-better-to-specify-source-files-with-glob-or-each-file-individually-in-cmak
@@ -115,6 +120,7 @@ target_link_libraries(rtgp_fluid_simulation PRIVATE
     ${GLEW_LIBRARIES}
     glfw
     glm::glm
+    ${APPLICATION_SERVICES}
 )
 
 # Install.
