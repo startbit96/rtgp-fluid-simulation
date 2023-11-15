@@ -10,6 +10,8 @@
       darwinPackages = if system == "aarch64-darwin" then [
         pkgs.darwin.apple_sdk.frameworks.ApplicationServices
       ] else [];
+      # Packaged version
+      packageDerivation = pkgs.callPackage ./nix/packages/rtgp-fluid-simulation.nix {};
     in {
       devShells.default = pkgs.mkShell {
         packages = with pkgs; [ 
@@ -19,5 +21,8 @@
           glm 
         ] ++ darwinPackages;
       };
+
+      packages.rtgp-fluid-simulation = packageDerivation;
+      packages.default = packageDerivation;
     });
 }
